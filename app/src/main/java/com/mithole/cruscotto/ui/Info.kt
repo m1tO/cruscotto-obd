@@ -140,7 +140,7 @@ fun InfoScreen(
             }
         }
         Card(t("Motore", "Engine")) { ProfileChoices(info.vin, profile, actions.setSetup) }
-        Card(t("Impostazioni", "Settings")) {
+        Card(t("Generali", "General")) {
             // Ogni lingua scritta nella sua lingua: si ritrova anche senza capire quella attuale.
             ChoiceRow(
                 t("Lingua", "Language"),

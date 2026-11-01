@@ -22,7 +22,7 @@ I built it because every OBD app I tried looked dated and buried the numbers I c
 - **Voice alerts**: spoken warnings for a cold engine or a hot turbo.
 - **CAN bus listener**: records raw CAN traffic (ATMA) and summarises it by ID. It helps reverse-engineer manufacturer-specific signals.
 - **Per-car profiles**: settings, records, gear ratios and dyno results are stored per VIN, so one tablet can serve several cars.
-- **Italian or English**: chosen in the Car tab, and it follows the device language until you pick one. It covers every screen, fault-code descriptions, voice alerts, number and date formats, and the CSV format: semicolons and decimal commas in Italian, standard commas and decimal points in English.
+- **Italian or English**: chosen in Settings, and it follows the device language until you pick one. It covers every screen, fault-code descriptions, voice alerts, number and date formats, and the CSV format: semicolons and decimal commas in Italian, standard commas and decimal points in English.
 
 ## Screenshots
 
@@ -40,7 +40,7 @@ I built it because every OBD app I tried looked dated and buried the numbers I c
     <td><img src="app/screenshots/7_cruscotto_aspirato.png" alt="Naturally aspirated dashboard"><br><sub>…and naturally aspirated ones (vacuum gauge)</sub></td>
   </tr>
   <tr>
-    <td><img src="app/screenshots/en_4_car.png" alt="Car info"><br><sub>Car info, supported PIDs, manual overrides</sub></td>
+    <td><img src="app/screenshots/en_4_car.png" alt="Settings"><br><sub>Settings: connection, car info, engine overrides, language</sub></td>
     <td><img src="app/screenshots/0_collegamento.png" alt="Connection screen"><br><sub>Connect over Wi-Fi or Bluetooth</sub></td>
   </tr>
   <tr>

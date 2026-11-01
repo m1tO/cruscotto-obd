@@ -227,7 +227,7 @@ object Obd {
         }
     }
 
-    /** Lingua dell'app, scelta nella scheda Auto; vale per tutte le auto. */
+    /** Lingua dell'app, scelta nella scheda Impostazioni; vale per tutte le auto. */
     fun setLanguage(l: Lang) {
         L.lang = l
         prefs?.edit()?.putString("set.lang", l.tag)?.apply()

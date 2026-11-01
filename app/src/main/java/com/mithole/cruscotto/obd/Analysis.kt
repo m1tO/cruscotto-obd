@@ -346,7 +346,7 @@ class Analyzer {
     private fun speedometer(gps: GpsStatus): Check {
         val title = t("Velocità rispetto al GPS", "Speed vs GPS")
         if (gps == GpsStatus.NO_HARDWARE) return Check(title, Level.NA, t("N/D", "N/A"), t("Questo tablet non ha il GPS, quindi il confronto non si può fare.", "This tablet has no GPS, so the comparison isn't possible."))
-        if (gps == GpsStatus.NO_PERMISSION) return Check(title, Level.NA, t("N/D", "N/A"), t("Serve il permesso di posizione: lo trovi nella scheda Auto.", "Needs location permission: you'll find it in the Car tab."))
+        if (gps == GpsStatus.NO_PERMISSION) return Check(title, Level.NA, t("N/D", "N/A"), t("Serve il permesso di posizione: lo trovi nella scheda Impostazioni.", "Needs location permission: you'll find it in Settings."))
         val diff = speedRatio.after(60.0)
             ?: return Check(title, Level.WAIT, t("In misura", "Measuring"), t("Serve un minuto a velocità costante sopra i 30 km/h, all'aperto.", "Needs a minute at steady speed above 30 km/h, outdoors."))
         val value = t("${f(diff, 1, true)} % rispetto al GPS", "${f(diff, 1, true)} % vs GPS")

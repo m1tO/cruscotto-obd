@@ -205,7 +205,7 @@ private fun ColumnScope.DynoView(d: DynoState, live: Live, massKg: Int) {
         }
         DynoChart(r)
         Text(
-            t("In ${r.gear}ª, ${dates.format(Date(r.at))}. Calcolata dall'accelerazione con $massKg kg a bordo (si cambia nella scheda Auto): ", "In gear ${r.gear}, ${dates.format(Date(r.at))}. Computed from acceleration with $massKg kg on board (change it in the Car tab): ") +
+            t("In ${r.gear}ª, ${dates.format(Date(r.at))}. Calcolata dall'accelerazione con $massKg kg a bordo (si cambia nella scheda Impostazioni): ", "In gear ${r.gear}, ${dates.format(Date(r.at))}. Computed from acceleration with $massKg kg on board (change it in Settings): ") +
                 t("salite, vento e passeggeri spostano il risultato.", "hills, wind and passengers shift the result."),
             color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp),
         )

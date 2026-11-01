@@ -22,7 +22,7 @@ enum class Fuel(private val labelIt: String, private val labelEn: String, val af
     }
 }
 
-/** Le scelte fatte a mano nella scheda Auto; null vuol dire "lo decide l'app". */
+/** Le scelte fatte a mano nella scheda Impostazioni; null vuol dire "lo decide l'app". */
 data class Setup(val fuel: Fuel? = null, val turbo: Boolean? = null, val rpmMax: Int? = null)
 
 /** Com'è fatta l'auto collegata: quello che si legge dalla centralina, corretto dalle scelte a mano. */

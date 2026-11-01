@@ -65,7 +65,7 @@ import com.mithole.cruscotto.obd.t
 
 enum class Tab(private val labelIt: String, private val labelEn: String) {
     DASH("Cruscotto", "Dashboard"), ANALYSIS("Analisi", "Analysis"), TIRES("Gomme", "Tyres"),
-    ERRORS("Errori", "Faults"), CHARTS("Grafici", "Charts"), INFO("Auto", "Car"),
+    ERRORS("Errori", "Faults"), CHARTS("Grafici", "Charts"), INFO("Impostazioni", "Settings"),
     ;
 
     val label: String get() = t(labelIt, labelEn)
@@ -89,7 +89,7 @@ private fun Tab.icon(): ImageVector = when (this) {
     Tab.TIRES -> Ic.tire
     Tab.ERRORS -> Ic.wrench
     Tab.CHARTS -> Ic.chart
-    Tab.INFO -> Ic.car
+    Tab.INFO -> Ic.settings
 }
 
 @Composable
