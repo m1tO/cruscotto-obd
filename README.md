@@ -1,12 +1,14 @@
 # Cruscotto
 
+*[Leggi in italiano](README.it.md)*
+
 **A custom OBD-II dashboard for Android tablets.** Plug a cheap ELM327 dongle into your car, and Cruscotto ("dashboard" in Italian) turns the tablet into a live instrument cluster with diagnostics, performance timing, tyre pressure and trip logging.
 
 I built it because every OBD app I tried looked dated and buried the numbers I care about. It's a personal project, sideloaded as an APK and not on the Play Store. The UI is in **Italian or English**, switchable in the app.
 
 ![Main dashboard](app/screenshots/en_1_dashboard.png)
 
-> All screenshots use the built-in demo mode: a fake ELM327 that runs the same code paths as a real dongle. The ones in Italian show the other UI language.
+> All screenshots use the built-in demo mode: a fake ELM327 that runs the same code paths as a real dongle.
 
 ## Features
 
@@ -33,19 +35,7 @@ I built it because every OBD app I tried looked dated and buried the numbers I c
   </tr>
   <tr>
     <td><img src="app/screenshots/en_3_charts.png" alt="Live charts"><br><sub>Live charts</sub></td>
-    <td><img src="app/screenshots/en_14_tyres.png" alt="Tyre pressure"><br><sub>Tyre pressure (BLE TPMS)</sub></td>
-  </tr>
-  <tr>
-    <td><img src="app/screenshots/8_cruscotto_diesel.png" alt="Diesel dashboard"><br><sub>Adapts to diesel engines…</sub></td>
-    <td><img src="app/screenshots/7_cruscotto_aspirato.png" alt="Naturally aspirated dashboard"><br><sub>…and naturally aspirated ones (vacuum gauge)</sub></td>
-  </tr>
-  <tr>
-    <td><img src="app/screenshots/en_4_car.png" alt="Settings"><br><sub>Settings: connection, car info, engine overrides, language</sub></td>
-    <td><img src="app/screenshots/0_collegamento.png" alt="Connection screen"><br><sub>Connect over Wi-Fi or Bluetooth</sub></td>
-  </tr>
-  <tr>
-    <td><img src="app/screenshots/17_ascolto_finito.png" alt="CAN listener"><br><sub>CAN bus listener</sub></td>
-    <td><img src="app/screenshots/6_cruscotto_verticale.png" alt="Portrait dashboard" width="60%"><br><sub>Portrait layout</sub></td>
+    <td><img src="app/screenshots/en_4_settings.png" alt="Settings"><br><sub>Settings: connection, car info, engine overrides, language</sub></td>
   </tr>
 </table>
 
@@ -67,8 +57,10 @@ Requirements: JDK 21 and the Android SDK with platform `android-37`.
 
 ```sh
 ./gradlew assembleDebug            # APK in app/build/outputs/apk/debug/
-./gradlew recordRoborazziDebug     # unit tests + regenerates the screenshots above
+./gradlew recordRoborazziDebug     # unit tests + regenerates the screenshots
 ```
+
+The screenshots in this README are kept in `app/screenshots/`, in English and Italian. The other screens are rendered too, as visual checks, into `app/build/screenshots/`.
 
 `assembleDebug` runs Lint first, and a missing runtime permission (`MissingPermission`) fails the build. That rule exists because a missing Bluetooth permission once broke the app silently in the car.
 
@@ -83,6 +75,7 @@ app/src/main/java/com/mithole/cruscotto/
 │   ├── Elm327.kt       # AT commands, init, PID requests
 │   ├── Obd.kt          # connection loop, polling, app state
 │   ├── Analysis.kt     # timing, power estimate, check-up
+│   ├── Lang.kt         # Italian / English
 │   ├── Gears.kt  Dyno.kt  Tires.kt  Trips.kt  Recorder.kt  Sniff.kt  …
 └── ui/         # Jetpack Compose screens
 ```

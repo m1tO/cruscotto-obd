@@ -13,3 +13,6 @@ local.properties
 .idea/
 *.iml
 .DS_Store
+
+# Post del blog: sorgente e immagini, fuori dal repo
+post_blog/

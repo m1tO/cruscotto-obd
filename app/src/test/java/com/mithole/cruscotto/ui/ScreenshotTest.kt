@@ -54,6 +54,14 @@ class ScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
+    /** Le schermate del README restano nel repo; le altre servono solo da controllo e finiscono in build/. */
+    private val essential = setOf(
+        "1_cruscotto", "10_analisi", "2_errori", "3_grafici", "4_impostazioni",
+        "en_1_dashboard", "en_10_analysis", "en_2_faults", "en_3_charts", "en_4_settings",
+    )
+
+    private fun out(name: String) = if (name in essential) "screenshots/$name.png" else "build/screenshots/$name.png"
+
     private val live = Live(
         values = mapOf(
             Metric.RPM to 3420.0, Metric.SPEED to 87.0, Metric.MAP to 186.0, Metric.BOOST to 0.85,
@@ -195,7 +203,7 @@ class ScreenshotTest {
         compose.setContent {
             CruscottoTheme { AppContent(conn, live, diag, info, analysis, history(), 1, tab, {}, Actions(), Recordings(), extras) }
         }
-        compose.onRoot().captureRoboImage("screenshots/$name.png")
+        compose.onRoot().captureRoboImage(out(name))
     }
 
     @Test fun dashboard() = shot("1_cruscotto", Tab.DASH)
@@ -216,7 +224,7 @@ class ScreenshotTest {
 
     @Test fun errorsEn() = english("en_2_faults", Tab.ERRORS)
 
-    @Test fun infoEn() = english("en_4_car", Tab.INFO)
+    @Test fun infoEn() = english("en_4_settings", Tab.INFO)
 
     @Test fun chartsEn() = english("en_3_charts", Tab.CHARTS)
 
@@ -240,7 +248,7 @@ class ScreenshotTest {
     @Test
     fun hud() {
         compose.setContent { CruscottoTheme { HudScreen(live.copy(values = live.values + (Metric.RPM to 5800.0)), info.profile, {}, startMirrored = false) } }
-        compose.onRoot().captureRoboImage("screenshots/16_hud.png")
+        compose.onRoot().captureRoboImage(out("16_hud"))
     }
 
     // Vicino al limitatore: shift light quasi piena.
@@ -264,7 +272,7 @@ class ScreenshotTest {
                 ) { ChartsScreen(live, history(), 1, Recordings(list = list), startSaved = true) }
             }
         }
-        compose.onRoot().captureRoboImage("screenshots/13_registrazioni.png")
+        compose.onRoot().captureRoboImage(out("13_registrazioni"))
     }
 
     @Test
@@ -273,7 +281,7 @@ class ScreenshotTest {
 
     @Test fun charts() = shot("3_grafici", Tab.CHARTS)
 
-    @Test fun info() = shot("4_auto", Tab.INFO)
+    @Test fun info() = shot("4_impostazioni", Tab.INFO)
 
     @Test fun reconnecting() = shot("5_riconnessione", Tab.DASH, Conn.Retrying("OBDII", "Il dongle non risponde più."))
 
@@ -312,7 +320,7 @@ class ScreenshotTest {
                 ) { SniffCard(state, connected = true, onStart = {}, onStop = {}) }
             }
         }
-        compose.onRoot().captureRoboImage("screenshots/$name.png")
+        compose.onRoot().captureRoboImage(out(name))
     }
 
     @Test
@@ -341,6 +349,6 @@ class ScreenshotTest {
                 )
             }
         }
-        compose.onRoot().captureRoboImage("screenshots/0_collegamento.png")
+        compose.onRoot().captureRoboImage(out("0_collegamento"))
     }
 }
