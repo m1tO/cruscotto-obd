@@ -61,15 +61,22 @@ import com.mithole.cruscotto.obd.Diag
 import com.mithole.cruscotto.obd.History
 import com.mithole.cruscotto.obd.Live
 import com.mithole.cruscotto.obd.Obd
+import com.mithole.cruscotto.obd.t
 
-enum class Tab(val label: String) { DASH("Cruscotto"), ANALYSIS("Analisi"), TIRES("Gomme"), ERRORS("Errori"), CHARTS("Grafici"), INFO("Auto") }
+enum class Tab(private val labelIt: String, private val labelEn: String) {
+    DASH("Cruscotto", "Dashboard"), ANALYSIS("Analisi", "Analysis"), TIRES("Gomme", "Tyres"),
+    ERRORS("Errori", "Faults"), CHARTS("Grafici", "Charts"), INFO("Auto", "Car"),
+    ;
+
+    val label: String get() = t(labelIt, labelEn)
+}
 
 /** Quello che arriva dai sensori del tablet e dalle impostazioni, raccolto per non allungare troppo le firme. */
 class Extras(
     val settings: Settings = Settings(),
     val dyno: DynoState = DynoState(),
     val trips: List<Trip> = emptyList(),
-    val tires: List<TireState> = Wheel.entries.map { TireState(it, null, Settings().target(it), TireLevel.NONE, "nessun sensore") },
+    val tires: List<TireState> = Wheel.entries.map { TireState(it, null, Settings().target(it), TireLevel.NONE, t("nessun sensore", "no sensor")) },
     val devices: List<BleSeen> = emptyList(),
     val perms: SensorPermissions = SensorPermissions(location = false, scan = false),
     val onHud: () -> Unit = {},
@@ -133,6 +140,7 @@ fun App(crash: String? = null, onCrashSeen: () -> Unit = {}) {
             requestSensors = { askPerms.launch(SensorPermissions.REQUEST) },
             startSniff = Obd::startSniff,
             stopSniff = Obd::stopSniff,
+            setLanguage = Obd::setLanguage,
         )
     }
     val tires = remember(devices, settings) { Tpms.states(settings) }
@@ -165,13 +173,13 @@ private fun CrashBanner(text: String, onDismiss: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "L'ultima volta l'app si è chiusa per un errore. Copia il motivo e mandalo: serve a correggerlo.",
+            t("L'ultima volta l'app si è chiusa per un errore. Copia il motivo e mandalo: serve a correggerlo.", "Last time the app closed because of an error. Copy the reason and send it: it helps fix it."),
             color = Pal.text, fontSize = 14.sp, modifier = Modifier.weight(1f),
         )
         TextButton(onClick = {
-            ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Errore Cruscotto", text))
-        }) { Text("Copia", color = Pal.text) }
-        TextButton(onClick = onDismiss) { Text("Chiudi", color = Pal.muted) }
+            ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(t("Errore Cruscotto", "Cruscotto error"), text))
+        }) { Text(t("Copia", "Copy"), color = Pal.text) }
+        TextButton(onClick = onDismiss) { Text(t("Chiudi", "Close"), color = Pal.muted) }
     }
 }
 
@@ -290,8 +298,8 @@ private fun BottomBar(tab: Tab, onTab: (Tab) -> Unit, badge: Int?) {
 private fun StatusBanner(conn: Conn, onCancel: () -> Unit) {
     val (text, color, spinner) = when (conn) {
         is Conn.Connecting -> Triple(conn.step, Pal.text, true)
-        is Conn.Retrying -> Triple("Collegamento perso: ${conn.reason} Riprovo…", Pal.amber, true)
-        is Conn.Connected -> if (conn.demo) Triple("Modalità demo: dati simulati", Pal.cyan, false) else return
+        is Conn.Retrying -> Triple(t("Collegamento perso: ${conn.reason} Riprovo…", "Connection lost: ${conn.reason} Retrying…"), Pal.amber, true)
+        is Conn.Connected -> if (conn.demo) Triple(t("Modalità demo: dati simulati", "Demo mode: simulated data"), Pal.cyan, false) else return
         Conn.Idle -> return
     }
     Row(
@@ -305,6 +313,6 @@ private fun StatusBanner(conn: Conn, onCancel: () -> Unit) {
             Spacer(Modifier.width(12.dp))
         }
         Text(text, color = color, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        TextButton(onClick = onCancel) { Text(if (conn is Conn.Connected) "Esci dalla demo" else "Annulla", color = Pal.text) }
+        TextButton(onClick = onCancel) { Text(if (conn is Conn.Connected) t("Esci dalla demo", "Exit demo") else t("Annulla", "Cancel"), color = Pal.text) }
     }
 }

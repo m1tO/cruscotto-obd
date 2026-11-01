@@ -5,7 +5,7 @@ import java.util.Locale
 /** Un consiglio da mostrare sul cruscotto, finché vale. */
 data class Advice(val level: Level, val title: String, val text: String)
 
-private fun f(v: Double, decimals: Int = 0) = String.format(Locale.ITALY, "%.${decimals}f", v)
+private fun f(v: Double, decimals: Int = 0) = String.format(L.locale, "%.${decimals}f", v)
 
 /**
  * Motore freddo e turbo caldo. A freddo l'olio è denso e protegge poco: niente giri alti.
@@ -44,14 +44,14 @@ class Advisor {
                     // Al minimo la turbina si raffredda: il calore accumulato scende con l'attesa.
                     heat = maxOf(0.0, heat - dt)
                     val s = left.toInt()
-                    return Advice(Level.WARN, "Turbo caldo", "Lascia girare il motore ancora %d:%02d prima di spegnere.".format(s / 60, s % 60))
+                    return Advice(Level.WARN, t("Turbo caldo", "Hot turbo"), t("Lascia girare il motore ancora %d:%02d prima di spegnere.", "Let the engine idle for another %d:%02d before switching off.").format(s / 60, s % 60))
                 }
             } else if (!idling) {
                 cooldownLeft = null
             }
             if (doneFor > 0) {
                 doneFor -= dt
-                return Advice(Level.OK, "Turbo raffreddato", "Puoi spegnere il motore.")
+                return Advice(Level.OK, t("Turbo raffreddato", "Turbo cooled down"), t("Puoi spegnere il motore.", "You can switch off the engine."))
             }
         }
 
@@ -60,11 +60,11 @@ class Advisor {
         val temp = oil ?: coolant ?: return null
         val cold = if (oil != null) oil < 70 else temp < 65
         if (!cold) return null
-        val what = if (oil != null) "olio" else "acqua"
+        val what = if (oil != null) t("olio", "oil") else t("acqua", "coolant")
         return if (rpm > 3500) {
-            Advice(Level.BAD, "Motore freddo", "Stai a ${f(rpm)} giri con l'$what a ${f(temp)} °C: tieni sotto i 3000 finché non si scalda.")
+            Advice(Level.BAD, t("Motore freddo", "Cold engine"), t("Stai a ${f(rpm)} giri con l'$what a ${f(temp)} °C: tieni sotto i 3000 finché non si scalda.", "You're at ${f(rpm)} rpm with the $what at ${f(temp)} °C: stay under 3000 until it warms up."))
         } else {
-            Advice(Level.WARN, "Motore freddo", "${what.replaceFirstChar { it.uppercase() }} a ${f(temp)} °C: guida tranquillo, niente tirate.")
+            Advice(Level.WARN, t("Motore freddo", "Cold engine"), t("${what.replaceFirstChar { it.uppercase() }} a ${f(temp)} °C: guida tranquillo, niente tirate.", "${what.replaceFirstChar { it.uppercase() }} at ${f(temp)} °C: drive gently, no hard pulls."))
         }
     }
 }
@@ -92,7 +92,7 @@ class Alerter {
         if (coolant != null) {
             if (coolant >= 105 && !hotWater) {
                 hotWater = true
-                say("acqua", t, 120_000, "Attenzione: acqua a ${f(coolant)} gradi.", out)
+                say("acqua", t, 120_000, t("Attenzione: acqua a ${f(coolant)} gradi.", "Warning: coolant at ${f(coolant)} degrees."), out)
             } else if (coolant < 100) {
                 hotWater = false
             }
@@ -100,19 +100,19 @@ class Alerter {
         val volt = v[Metric.VOLT]
         val running = (v[Metric.RPM] ?: 0.0) > 400
         lowVoltS = if (running && volt != null && volt < 12.8) lowVoltS + dt else 0.0
-        if (lowVoltS >= 15 && volt != null) say("batteria", t, 600_000, "La batteria non si carica: ${f(volt, 1)} volt.", out)
+        if (lowVoltS >= 15 && volt != null) say("batteria", t, 600_000, t("La batteria non si carica: ${f(volt, 1)} volt.", "The battery isn't charging: ${f(volt, 1)} volts."), out)
 
         status?.let { s ->
-            if (dtcCount >= 0 && s.dtcCount > dtcCount) say("errore", t, 0, "Nuovo errore motore. Guarda la scheda errori.", out)
+            if (dtcCount >= 0 && s.dtcCount > dtcCount) say("errore", t, 0, t("Nuovo errore motore. Guarda la scheda errori.", "New engine fault. Check the faults tab."), out)
             dtcCount = s.dtcCount
         }
-        if (advice?.level == Level.BAD && advice.title == "Motore freddo") say("freddo", t, 120_000, "Motore freddo, piano coi giri.", out)
-        if (cooledDown) say("turbo", t, 0, "Turbo raffreddato, puoi spegnere.", out)
+        if (advice?.level == Level.BAD && advice.title == t("Motore freddo", "Cold engine")) say("freddo", t, 120_000, t("Motore freddo, piano coi giri.", "Cold engine, go easy on the revs."), out)
+        if (cooledDown) say("turbo", t, 0, t("Turbo raffreddato, puoi spegnere.", "Turbo cooled down, you can switch off."), out)
 
         for (s in tires) {
             val low = s.level == TireLevel.LOW || s.level == TireLevel.FLAT
             if (low && s.wheel !in lowTires && s.reading != null) {
-                say("gomma" + s.wheel, t, 600_000, "Gomma ${s.wheel.label.lowercase()} a ${f(s.reading.bar, 1)} bar.", out)
+                say("gomma" + s.wheel, t, 600_000, t("Gomma ${s.wheel.label.lowercase()} a ${f(s.reading.bar, 1)} bar.", "${s.wheel.label} tyre at ${f(s.reading.bar, 1)} bar."), out)
             }
             if (low) lowTires += s.wheel else lowTires -= s.wheel
         }

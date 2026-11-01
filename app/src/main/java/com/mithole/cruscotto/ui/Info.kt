@@ -49,6 +49,9 @@ import com.mithole.cruscotto.obd.Setup
 import com.mithole.cruscotto.obd.SniffState
 import com.mithole.cruscotto.obd.Wheel
 import com.mithole.cruscotto.obd.Wmi
+import com.mithole.cruscotto.obd.Lang
+import com.mithole.cruscotto.obd.t
+import com.mithole.cruscotto.obd.L
 
 class Actions(
     val readDtcs: () -> Unit = {},
@@ -65,10 +68,11 @@ class Actions(
     val setSetup: (Setup) -> Unit = {},
     val startSniff: () -> Unit = {},
     val stopSniff: () -> Unit = {},
+    val setLanguage: (Lang) -> Unit = {},
 )
 
 fun connLabel(conn: Conn): String = when (conn) {
-    Conn.Idle -> "Scollegato"
+    Conn.Idle -> t("Scollegato", "Disconnected")
     is Conn.Connecting -> conn.label
     is Conn.Connected -> conn.label
     is Conn.Retrying -> conn.label
@@ -76,15 +80,15 @@ fun connLabel(conn: Conn): String = when (conn) {
 
 fun infoText(conn: Conn, info: CarInfo, live: Live): String = buildString {
     appendLine("Cruscotto OBD")
-    appendLine("Dongle: ${connLabel(conn)}")
-    appendLine("Versione: ${info.elm ?: "N/D"}")
-    appendLine("Protocollo: ${info.protocol ?: "N/D"}")
-    appendLine("VIN: ${info.vin ?: "N/D"}")
-    appendLine("Marca: ${Wmi.brand(info.vin) ?: "N/D"}")
-    appendLine("Carburante: ${info.profile.fuel.label}${if (info.profile.setup.fuel == null) " (automatico)" else ""}")
-    appendLine("Turbo: ${if (info.profile.turbo) "sì" else "no"}${if (info.profile.setup.turbo == null) " (automatico)" else ""}")
-    appendLine("Letture al secondo: ${fmt(live.hz, 1)}")
-    appendLine("PID supportati: ${info.pids.sorted().joinToString(" ") { "%02X".format(it) }}")
+    appendLine(t("Dongle: ${connLabel(conn)}", "Dongle: ${connLabel(conn)}"))
+    appendLine(t("Versione: ${info.elm ?: "N/D"}", "Version: ${info.elm ?: "N/A"}"))
+    appendLine(t("Protocollo: ${info.protocol ?: "N/D"}", "Protocol: ${info.protocol ?: "N/A"}"))
+    appendLine(t("VIN: ${info.vin ?: "N/D"}", "VIN: ${info.vin ?: "N/A"}"))
+    appendLine(t("Marca: ${Wmi.brand(info.vin) ?: "N/D"}", "Make: ${Wmi.brand(info.vin) ?: "N/A"}"))
+    appendLine(t("Carburante: ${info.profile.fuel.label}${if (info.profile.setup.fuel == null) " (automatico)" else ""}", "Fuel: ${info.profile.fuel.label}${if (info.profile.setup.fuel == null) " (automatic)" else ""}"))
+    appendLine(t("Turbo: ${if (info.profile.turbo) "sì" else "no"}${if (info.profile.setup.turbo == null) " (automatico)" else ""}", "Turbo: ${if (info.profile.turbo) "yes" else "no"}${if (info.profile.setup.turbo == null) " (automatic)" else ""}"))
+    appendLine(t("Letture al secondo: ${fmt(live.hz, 1)}", "Readings per second: ${fmt(live.hz, 1)}"))
+    appendLine(t("PID supportati: ${info.pids.sorted().joinToString(" ") { "%02X".format(it) }}", "Supported PIDs: ${info.pids.sorted().joinToString(" ") { "%02X".format(it) }}"))
 }
 
 @Composable
@@ -102,28 +106,28 @@ fun InfoScreen(
     val metrics = info.pids.mapNotNull { Pids.byPid[it]?.metric }.sortedBy { it.ordinal }
     val profile = info.profile
     val fuelNote = when {
-        0x5E in info.pids -> "Il consumo è quello comunicato dalla centralina."
+        0x5E in info.pids -> t("Il consumo è quello comunicato dalla centralina.", "Fuel use is the figure reported by the ECU.")
         Metric.FUEL_RATE in live.available ->
-            "Il consumo è stimato dal flusso d'aria: in rilascio e a pieno carico è meno preciso."
+            t("Il consumo è stimato dal flusso d'aria: in rilascio e a pieno carico è meno preciso.", "Fuel use is estimated from air flow: less accurate when coasting and at full load.")
         profile.fuel == Fuel.DIESEL ->
-            "Sui diesel il consumo si vede solo se lo comunica la centralina, e questa non lo fa."
-        profile.fuel == Fuel.CNG -> "Col metano il consumo si misura a kg: l'app non lo stima."
-        else -> "Quest'auto non comunica né il consumo né il flusso d'aria: il consumo non si può calcolare."
+            t("Sui diesel il consumo si vede solo se lo comunica la centralina, e questa non lo fa.", "On diesels fuel use only shows if the ECU reports it, and this one doesn't.")
+        profile.fuel == Fuel.CNG -> t("Col metano il consumo si misura a kg: l'app non lo stima.", "On CNG fuel is measured in kg: the app doesn't estimate it.")
+        else -> t("Quest'auto non comunica né il consumo né il flusso d'aria: il consumo non si può calcolare.", "This car reports neither fuel use nor air flow: fuel use can't be calculated.")
     }
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Card("Collegamento") {
-            InfoRow("Dongle", connLabel(conn))
-            InfoRow("Versione", info.elm ?: "N/D")
-            InfoRow("Protocollo", info.protocol ?: "N/D")
-            InfoRow("Letture al secondo", fmt(live.hz, 1))
+        Card(t("Collegamento", "Connection")) {
+            InfoRow(t("Dongle", "Dongle"), connLabel(conn))
+            InfoRow(t("Versione", "Version"), info.elm ?: t("N/D", "N/A"))
+            InfoRow(t("Protocollo", "Protocol"), info.protocol ?: t("N/D", "N/A"))
+            InfoRow(t("Letture al secondo", "Readings per second"), fmt(live.hz, 1))
         }
-        Card("Auto") {
-            InfoRow("Telaio (VIN)", info.vin ?: "N/D")
-            InfoRow("Marca", Wmi.brand(info.vin) ?: "N/D")
-            InfoRow("Valori standard disponibili", "${metrics.size}")
+        Card(t("Auto", "Car")) {
+            InfoRow(t("Telaio (VIN)", "Chassis number (VIN)"), info.vin ?: t("N/D", "N/A"))
+            InfoRow(t("Marca", "Make"), Wmi.brand(info.vin) ?: t("N/D", "N/A"))
+            InfoRow(t("Valori standard disponibili", "Standard values available"), "${metrics.size}")
             VSpace(6)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 metrics.forEach { m ->
@@ -135,66 +139,71 @@ fun InfoScreen(
                 }
             }
         }
-        Card("Motore") { ProfileChoices(info.vin, profile, actions.setSetup) }
-        Card("Impostazioni") {
-            NumberRow("Peso con te a bordo", "${settings.massKg} kg", { actions.setSettings(settings.copy(massKg = (settings.massKg - 10).coerceAtLeast(500))) }) {
+        Card(t("Motore", "Engine")) { ProfileChoices(info.vin, profile, actions.setSetup) }
+        Card(t("Impostazioni", "Settings")) {
+            // Ogni lingua scritta nella sua lingua: si ritrova anche senza capire quella attuale.
+            ChoiceRow(
+                t("Lingua", "Language"),
+                Lang.entries.map { l -> Choice(l.native, L.lang == l) { actions.setLanguage(l) } },
+            )
+            NumberRow(t("Peso con te a bordo", "Weight with you on board"), "${settings.massKg} kg", { actions.setSettings(settings.copy(massKg = (settings.massKg - 10).coerceAtLeast(500))) }) {
                 actions.setSettings(settings.copy(massKg = settings.massKg + 10))
             }
-            NumberRow("Prezzo carburante", "${fmt(settings.fuelPrice, 3)} €/L", { actions.setSettings(settings.copy(fuelPrice = Math.round((settings.fuelPrice - 0.01) * 1000) / 1000.0)) }) {
+            NumberRow(t("Prezzo carburante", "Fuel price"), "${fmt(settings.fuelPrice, 3)} €/L", { actions.setSettings(settings.copy(fuelPrice = Math.round((settings.fuelPrice - 0.01) * 1000) / 1000.0)) }) {
                 actions.setSettings(settings.copy(fuelPrice = Math.round((settings.fuelPrice + 0.01) * 1000) / 1000.0))
             }
             ChoiceRow(
-                "Avvisi a voce",
+                t("Avvisi a voce", "Voice alerts"),
                 listOf(
-                    Choice("Sì", settings.voice) { actions.setSettings(settings.copy(voice = true)) },
-                    Choice("No", !settings.voice) { actions.setSettings(settings.copy(voice = false)) },
+                    Choice(t("Sì", "On"), settings.voice) { actions.setSettings(settings.copy(voice = true)) },
+                    Choice(t("No", "Off"), !settings.voice) { actions.setSettings(settings.copy(voice = false)) },
                 ),
             )
             // Lo stato lo scrive chi accende il GPS; la scheda si ridisegna a ogni lettura dell'auto, quindi resta aggiornato.
             InfoRow(
                 "GPS",
                 when {
-                    !perms.location -> "manca il permesso"
-                    Obd.gpsStatus == GpsStatus.NO_HARDWARE -> "il tablet non ha il GPS"
-                    Obd.gpsStatus == GpsStatus.ON -> "acceso"
-                    else -> "permesso concesso"
+                    !perms.location -> t("manca il permesso", "permission missing")
+                    Obd.gpsStatus == GpsStatus.NO_HARDWARE -> t("il tablet non ha il GPS", "this tablet has no GPS")
+                    Obd.gpsStatus == GpsStatus.ON -> t("acceso", "on")
+                    else -> t("permesso concesso", "permission granted")
                 },
             )
-            InfoRow("Sensori gomme", if (perms.scan) "permesso concesso" else "manca il permesso")
+            InfoRow(t("Sensori gomme", "Tyre sensors"), if (perms.scan) t("permesso concesso", "permission granted") else t("manca il permesso", "permission missing"))
             if (!perms.all) {
-                OutlinedButton(onClick = actions.requestSensors, modifier = Modifier.padding(top = 6.dp)) { Text("Concedi posizione e dispositivi vicini") }
+                OutlinedButton(onClick = actions.requestSensors, modifier = Modifier.padding(top = 6.dp)) { Text(t("Concedi posizione e dispositivi vicini", "Allow location and nearby devices")) }
             }
             Text(
-                "Il peso serve al banco prova; il prezzo al costo dei viaggi. La voce avvisa di acqua troppo calda, batteria che non carica, " +
-                    "nuovi errori, motore freddo tirato, turbo raffreddato e gomme sgonfie.",
+                t("Il peso serve al banco prova; il prezzo al costo dei viaggi. La voce avvisa di acqua troppo calda, batteria che non carica, ", "Weight is used by the dyno; price for trip costs. The voice warns about hot coolant, battery not charging, ") +
+                    t("nuovi errori, motore freddo tirato, turbo raffreddato e gomme sgonfie.", "new faults, revving a cold engine, turbo cooled down and low tyres."),
                 color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
             )
         }
-        Card("Marce") {
+        Card(t("Marce", "Gears")) {
             if (live.gearRatios.isEmpty()) {
-                InfoRow("Rapporti imparati", "nessuno ancora")
+                InfoRow(t("Rapporti imparati", "Learned ratios"), t("nessuno ancora", "none yet"))
             } else {
-                live.gearRatios.forEachIndexed { i, k -> InfoRow("${i + 1}ª", "${fmt(k, 1)} giri per km/h · ${fmt(1000 / k)} km/h a 1000 giri") }
+                live.gearRatios.forEachIndexed { i, k -> InfoRow("${i + 1}ª", t("${fmt(k, 1)} giri per km/h · ${fmt(1000 / k)} km/h a 1000 giri", "${fmt(k, 1)} rpm per km/h · ${fmt(1000 / k)} km/h at 1000 rpm")) }
             }
             Text(
-                "La marcia si riconosce dal rapporto tra giri e velocità, che a frizione innestata resta fisso. " +
-                    "L'app lo impara da sola guidando: la prima è quella con cui parti da fermo, le altre arrivano " +
-                    "tenendo ognuna qualche secondo. Se cambi misura delle gomme, fai riapprendere.",
+                t("La marcia si riconosce dal rapporto tra giri e velocità, che a frizione innestata resta fisso. ", "The gear is recognised from the ratio between rpm and speed, which stays fixed with the clutch engaged. ") +
+                    t("L'app lo impara da sola guidando: la prima è quella con cui parti da fermo, le altre arrivano ", "The app learns it by itself while you drive: first gear is the one you pull away in, the others come ") +
+                    t("tenendo ognuna qualche secondo. Se cambi misura delle gomme, fai riapprendere.", "by holding each one for a few seconds. If you change tyre size, relearn."),
                 color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
             )
-            OutlinedButton(onClick = actions.resetGears, modifier = Modifier.padding(top = 8.dp)) { Text("Riapprendi le marce") }
+            OutlinedButton(onClick = actions.resetGears, modifier = Modifier.padding(top = 8.dp)) { Text(t("Riapprendi le marce", "Relearn gears")) }
         }
-        Card("Viaggio") {
-            InfoRow("Distanza", "${fmt(live.tripKm, 1)} km")
-            InfoRow("Carburante stimato", "${fmt(live.tripFuelL, 2)} L")
-            InfoRow("Media", "${fmt(live.tripL100, 1)} L/100 km")
-            InfoRow("Velocità massima", "${fmt(live.peaks[Metric.SPEED])} km/h")
-            if (profile.turbo) InfoRow("Turbo massimo", "${fmt(live.peaks[Metric.BOOST], 2, signed = true)} bar")
-            InfoRow("Giri massimi", "${fmt(live.peaks[Metric.RPM])} giri/min")
+        Card(t("Viaggio", "Trip")) {
+            InfoRow(t("Distanza", "Distance"), "${fmt(live.tripKm, 1)} km")
+            InfoRow(t("Carburante stimato", "Estimated fuel"), "${fmt(live.tripFuelL, 2)} L")
+            InfoRow(t("Media", "Average"), "${fmt(live.tripL100, 1)} L/100 km")
+            InfoRow(t("Velocità massima", "Top speed"), "${fmt(live.peaks[Metric.SPEED])} km/h")
+            if (profile.turbo) InfoRow(t("Turbo massimo", "Max boost"), "${fmt(live.peaks[Metric.BOOST], 2, signed = true)} bar")
+            InfoRow(t("Giri massimi", "Max rpm"), t("${fmt(live.peaks[Metric.RPM])} giri/min", "${fmt(live.peaks[Metric.RPM])} rpm"))
             VSpace(8)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = actions.resetTrip) { Text("Azzera viaggio") }
-                OutlinedButton(onClick = actions.resetPeaks) { Text("Azzera massimi") }
+                OutlinedButton(onClick = actions.resetTrip) { Text(t("Azzera viaggio", "Reset trip")) }
+                OutlinedButton(onClick = actions.resetPeaks) { Text(t("Azzera massimi", "Reset peaks")) }
             }
             Text(
                 fuelNote,
@@ -209,13 +218,13 @@ fun InfoScreen(
             }) {
                 Icon(Ic.copy, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Copia informazioni")
+                Text(t("Copia informazioni", "Copy info"))
             }
-            OutlinedButton(onClick = actions.forget) { Text("Dimentica il dongle") }
+            OutlinedButton(onClick = actions.forget) { Text(t("Dimentica il dongle", "Forget the dongle")) }
             Button(
                 onClick = actions.disconnect,
                 colors = ButtonDefaults.buttonColors(containerColor = Pal.red, contentColor = Color.White),
-            ) { Text("Disconnetti") }
+            ) { Text(t("Disconnetti", "Disconnect")) }
         }
     }
 }
@@ -227,11 +236,11 @@ fun InfoScreen(
 @Composable
 fun SniffCard(s: SniffState, connected: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
     val ctx = LocalContext.current
-    Card("Ascolto della rete") {
+    Card(t("Ascolto della rete", "Bus listening")) {
         Text(
-            "Le centraline si scambiano messaggi di continuo, anche senza che nessuno chieda niente. Per circa 40 secondi " +
-                "l'app smette di leggere i valori e ascolta quel traffico, un gruppo di indirizzi alla volta. Fallo col motore " +
-                "acceso e l'auto ferma; mentre ascolta dai qualche colpo di acceleratore, così si vede quali dati seguono giri e turbo.",
+            t("Le centraline si scambiano messaggi di continuo, anche senza che nessuno chieda niente. Per circa 40 secondi ", "ECUs exchange messages all the time, even when nobody asks for anything. For about 40 seconds ") +
+                t("l'app smette di leggere i valori e ascolta quel traffico, un gruppo di indirizzi alla volta. Fallo col motore ", "the app stops reading values and listens to that traffic, one group of IDs at a time. Do it with the engine ") +
+                t("acceso e l'auto ferma; mentre ascolta dai qualche colpo di acceleratore, così si vede quali dati seguono giri e turbo.", "running and the car stopped; blip the throttle a few times while it listens, so you can see which data follow rpm and boost."),
             color = Pal.muted, fontSize = 13.sp,
         )
         VSpace(10)
@@ -242,17 +251,17 @@ fun SniffCard(s: SniffState, connected: Boolean, onStart: () -> Unit, onStop: ()
                     modifier = Modifier.fillMaxWidth(), color = Pal.cyan, trackColor = Pal.surface2,
                 )
                 VSpace(8)
-                InfoRow("Gruppo", "${s.window} di ${s.windows}")
-                InfoRow("Messaggi sentiti", "${s.frames}")
-                InfoRow("Indirizzi diversi", "${s.ids}")
-                if (s.overflows > 0) InfoRow("Dongle saturo", "${s.overflows} volte")
-                OutlinedButton(onClick = onStop, modifier = Modifier.padding(top = 8.dp)) { Text("Ferma") }
+                InfoRow(t("Gruppo", "Group"), t("${s.window} di ${s.windows}", "${s.window} of ${s.windows}"))
+                InfoRow(t("Messaggi sentiti", "Messages heard"), "${s.frames}")
+                InfoRow(t("Indirizzi diversi", "Different IDs"), "${s.ids}")
+                if (s.overflows > 0) InfoRow(t("Dongle saturo", "Dongle overflowed"), t("${s.overflows} volte", "${s.overflows} times"))
+                OutlinedButton(onClick = onStop, modifier = Modifier.padding(top = 8.dp)) { Text(t("Ferma", "Stop")) }
             }
             else -> {
                 if (s.summary != null) {
-                    InfoRow("Messaggi sentiti", "${s.frames}")
-                    InfoRow("Indirizzi diversi", "${s.ids}")
-                    InfoRow("Dongle saturo", if (s.overflows == 0) "mai" else "${s.overflows} volte")
+                    InfoRow(t("Messaggi sentiti", "Messages heard"), "${s.frames}")
+                    InfoRow(t("Indirizzi diversi", "Different IDs"), "${s.ids}")
+                    InfoRow(t("Dongle saturo", "Dongle overflowed"), if (s.overflows == 0) t("mai", "never") else t("${s.overflows} volte", "${s.overflows} times"))
                     VSpace(4)
                 }
                 s.message?.let { Text(it, color = Pal.amber, fontSize = 14.sp, modifier = Modifier.padding(bottom = 6.dp)) }
@@ -260,11 +269,11 @@ fun SniffCard(s: SniffState, connected: Boolean, onStart: () -> Unit, onStop: ()
                     if (s.summary != null) {
                         OutlinedButton(onClick = {
                             ctx.getSystemService(ClipboardManager::class.java)
-                                ?.setPrimaryClip(ClipData.newPlainText("Ascolto Cruscotto", s.summary))
+                                ?.setPrimaryClip(ClipData.newPlainText(t("Ascolto Cruscotto", "Cruscotto bus capture"), s.summary))
                         }) {
                             Icon(Ic.copy, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Copia riassunto")
+                            Text(t("Copia riassunto", "Copy summary"))
                         }
                     }
                     s.file?.let { f ->
@@ -275,12 +284,12 @@ fun SniffCard(s: SniffState, connected: Boolean, onStart: () -> Unit, onStop: ()
                                     .putExtra(Intent.EXTRA_STREAM, uri)
                                     .putExtra(Intent.EXTRA_SUBJECT, f.name)
                                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                ctx.startActivity(Intent.createChooser(send, "Manda il file dell'ascolto"))
+                                ctx.startActivity(Intent.createChooser(send, t("Manda il file dell'ascolto", "Send the capture file")))
                             }
-                        }) { Text("Condividi file") }
+                        }) { Text(t("Condividi file", "Share file")) }
                     }
                     Button(onClick = onStart, enabled = connected) {
-                        Text(if (s.summary != null || s.message != null) "Ascolta di nuovo" else "Ascolta la rete")
+                        Text(if (s.summary != null || s.message != null) t("Ascolta di nuovo", "Listen again") else t("Ascolta la rete", "Listen to the bus"))
                     }
                 }
             }
@@ -295,26 +304,26 @@ private class Choice(val label: String, val selected: Boolean, val onClick: () -
 private fun ProfileChoices(vin: String?, p: Profile, onSetup: (Setup) -> Unit) {
     val s = p.setup
     ChoiceRow(
-        "Carburante",
-        listOf(Choice("Automatico · ${(p.detectedFuel ?: Fuel.PETROL).label}", s.fuel == null) { onSetup(s.copy(fuel = null)) }) +
+        t("Carburante", "Fuel"),
+        listOf(Choice(t("Automatico · ${(p.detectedFuel ?: Fuel.PETROL).label}", "Automatic · ${(p.detectedFuel ?: Fuel.PETROL).label}"), s.fuel == null) { onSetup(s.copy(fuel = null)) }) +
             Fuel.entries.map { f -> Choice(f.label, s.fuel == f) { onSetup(s.copy(fuel = f)) } },
     )
     ChoiceRow(
-        "Turbo",
+        t("Turbo", "Turbo"),
         listOf(
-            Choice("Automatico · ${if (p.autoTurbo) "sì" else "non ancora visto"}", s.turbo == null) { onSetup(s.copy(turbo = null)) },
-            Choice("Sì", s.turbo == true) { onSetup(s.copy(turbo = true)) },
-            Choice("No", s.turbo == false) { onSetup(s.copy(turbo = false)) },
+            Choice(t("Automatico · ${if (p.autoTurbo) "sì" else "non ancora visto"}", "Automatic · ${if (p.autoTurbo) "yes" else "not seen yet"}"), s.turbo == null) { onSetup(s.copy(turbo = null)) },
+            Choice(t("Sì", "Yes"), s.turbo == true) { onSetup(s.copy(turbo = true)) },
+            Choice(t("No", "No"), s.turbo == false) { onSetup(s.copy(turbo = false)) },
         ),
     )
     ChoiceRow(
-        "Fondo scala contagiri",
-        listOf(Choice("Automatico · ${p.autoRpmMax}", s.rpmMax == null) { onSetup(s.copy(rpmMax = null)) }) +
+        t("Fondo scala contagiri", "Rev counter full scale"),
+        listOf(Choice(t("Automatico · ${p.autoRpmMax}", "Automatic · ${p.autoRpmMax}"), s.rpmMax == null) { onSetup(s.copy(rpmMax = null)) }) +
             Profile.RPM_CHOICES.map { r -> Choice("$r", s.rpmMax == r) { onSetup(s.copy(rpmMax = r)) } },
     )
     Text(
-        "Le scelte valgono solo per quest'auto (telaio ${vin ?: "non letto"}). In automatico il carburante lo dice " +
-            "la centralina, e il turbo si riconosce la prima volta che la pressione nel collettore supera quella esterna.",
+        t("Le scelte valgono solo per quest'auto (telaio ${vin ?: "non letto"}). In automatico il carburante lo dice ", "These choices apply only to this car (VIN ${vin ?: "not read"}). In automatic mode the fuel comes from ") +
+            t("la centralina, e il turbo si riconosce la prima volta che la pressione nel collettore supera quella esterna.", "the ECU, and the turbo is recognised the first time manifold pressure goes above outside pressure."),
         color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp),
     )
 }

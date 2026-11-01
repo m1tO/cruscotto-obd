@@ -67,6 +67,8 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import com.mithole.cruscotto.obd.t
+import com.mithole.cruscotto.obd.L
 
 private val ORDER = listOf(
     Metric.RPM, Metric.SPEED, Metric.BOOST, Metric.MAP, Metric.COOLANT, Metric.IAT, Metric.VOLT, Metric.LOAD,
@@ -120,9 +122,9 @@ fun ChartsScreen(
             return@Column
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Segment("In diretta", !saved) { saved = false }
+            Segment(t("In diretta", "Live"), !saved) { saved = false }
             Spacer(Modifier.width(8.dp))
-            Segment("Registrazioni (${rec.list.size})", saved) { saved = true }
+            Segment(t("Registrazioni (${rec.list.size})", "Recordings (${rec.list.size})"), saved) { saved = true }
             Spacer(Modifier.weight(1f))
             RecordButton(rec)
         }
@@ -147,7 +149,7 @@ private fun RecordButton(rec: Recordings) {
         Button(onClick = rec.start, colors = ButtonDefaults.buttonColors(containerColor = Pal.surface2, contentColor = Pal.text)) {
             Box(Modifier.size(12.dp).clip(RoundedCornerShape(6.dp)).background(Pal.red))
             Spacer(Modifier.width(8.dp))
-            Text("Registra")
+            Text(t("Registra", "Record"))
         }
     } else {
         val elapsed by produceState(0.0, since) {
@@ -159,7 +161,7 @@ private fun RecordButton(rec: Recordings) {
         Button(onClick = rec.stop, colors = ButtonDefaults.buttonColors(containerColor = Pal.red, contentColor = Color.White)) {
             Box(Modifier.size(12.dp).background(Color.White))
             Spacer(Modifier.width(8.dp))
-            Text("Ferma · ${clock(elapsed)}", style = Digits)
+            Text(t("Ferma · ${clock(elapsed)}", "Stop · ${clock(elapsed)}"), style = Digits)
         }
     }
 }
@@ -169,7 +171,7 @@ private fun LiveCharts(live: Live, history: History, version: Long) {
     val metrics = ORDER.filter { it in live.available }
     if (metrics.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Nessun dato ancora.", color = Pal.muted, fontSize = 16.sp)
+            Text(t("Nessun dato ancora.", "No data yet."), color = Pal.muted, fontSize = 16.sp)
         }
         return
     }
@@ -182,7 +184,7 @@ private fun LiveCharts(live: Live, history: History, version: Long) {
     ) {
         items(metrics, key = { it.name }) { m ->
             val samples = remember(version, m) { history.snapshot(m) }
-            ChartCard(m, samples, live.values[m], null, History.WINDOW_MS, "ultimi 3 minuti")
+            ChartCard(m, samples, live.values[m], null, History.WINDOW_MS, t("ultimi 3 minuti", "last 3 minutes"))
         }
     }
 }
@@ -205,14 +207,14 @@ private fun RecordingList(rec: Recordings, onOpen: (Recording) -> Unit) {
     if (rec.list.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Nessuna registrazione. Premi Registra prima di una tirata o di un viaggio: ogni lettura finisce in un file " +
-                    "che puoi rivedere qui, oppure esportare e aprire con Excel.",
+                t("Nessuna registrazione. Premi Registra prima di una tirata o di un viaggio: ogni lettura finisce in un file ", "No recordings. Press Record before a pull or a trip: every reading goes into a file ") +
+                    t("che puoi rivedere qui, oppure esportare e aprire con Excel.", "you can review here, or export and open in Excel."),
                 color = Pal.muted, fontSize = 16.sp,
             )
         }
         return
     }
-    val dates = remember { SimpleDateFormat("EEEE d MMMM yyyy, HH:mm", Locale.ITALY) }
+    val dates = remember(L.lang) { SimpleDateFormat("EEEE d MMMM yyyy, HH:mm", L.locale) }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(420.dp),
         modifier = Modifier.fillMaxSize(),
@@ -225,20 +227,20 @@ private fun RecordingList(rec: Recordings, onOpen: (Recording) -> Unit) {
             Column(Modifier.fillMaxWidth().glass(20.dp).padding(16.dp)) {
                 Text(dates.format(Date(r.startedAt)).replaceFirstChar { it.uppercase() }, color = Pal.text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 Text(
-                    if (recording) "in registrazione…" else "${clock(r.seconds)} · ${size(r.bytes)}",
+                    if (recording) t("in registrazione…", "recording…") else "${clock(r.seconds)} · ${size(r.bytes)}",
                     color = if (recording) Pal.red else Pal.muted, fontSize = 13.sp, style = Digits,
                 )
                 if (!recording) {
                     Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { onOpen(r) }) { Text("Rivedi") }
-                        OutlinedButton(onClick = { exporting = r; export.launch(r.file.name) }) { Text("Esporta") }
+                        OutlinedButton(onClick = { onOpen(r) }) { Text(t("Rivedi", "View")) }
+                        OutlinedButton(onClick = { exporting = r; export.launch(r.file.name) }) { Text(t("Esporta", "Export")) }
                         if (confirmDelete == r) {
                             Button(
                                 onClick = { confirmDelete = null; rec.delete(r) },
                                 colors = ButtonDefaults.buttonColors(containerColor = Pal.red, contentColor = Color.White),
-                            ) { Text("Conferma") }
+                            ) { Text(t("Conferma", "Confirm")) }
                         } else {
-                            TextButton(onClick = { confirmDelete = r }) { Text("Elimina", color = Pal.muted) }
+                            TextButton(onClick = { confirmDelete = r }) { Text(t("Elimina", "Delete"), color = Pal.muted) }
                         }
                     }
                 }
@@ -251,7 +253,7 @@ private fun RecordingList(rec: Recordings, onOpen: (Recording) -> Unit) {
 private fun TrackView(r: Recording, onBack: () -> Unit) {
     var track by remember(r) { mutableStateOf<Track?>(null) }
     LaunchedEffect(r) { track = withContext(Dispatchers.IO) { runCatching { Recorder.read(r.file) }.getOrNull() } }
-    val dates = remember { SimpleDateFormat("d MMMM yyyy, HH:mm", Locale.ITALY) }
+    val dates = remember(L.lang) { SimpleDateFormat("d MMMM yyyy, HH:mm", L.locale) }
     val t = track
     LazyVerticalGrid(
         columns = GridCells.Adaptive(400.dp),
@@ -262,7 +264,7 @@ private fun TrackView(r: Recording, onBack: () -> Unit) {
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onBack) { Text("‹ Registrazioni", color = Pal.text) }
+                TextButton(onClick = onBack) { Text(t("‹ Registrazioni", "‹ Recordings"), color = Pal.text) }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "${dates.format(Date(r.startedAt))} · ${clock(t?.seconds ?: r.seconds)}",
@@ -271,13 +273,13 @@ private fun TrackView(r: Recording, onBack: () -> Unit) {
             }
         }
         if (t == null) {
-            item(span = { GridItemSpan(maxLineSpan) }) { Text("Carico…", color = Pal.muted, fontSize = 16.sp) }
+            item(span = { GridItemSpan(maxLineSpan) }) { Text(t("Carico…", "Loading…"), color = Pal.muted, fontSize = 16.sp) }
         } else {
             if (t.path.size >= 2) item(span = { GridItemSpan(maxLineSpan) }) { PathCard(t.path) }
             val window = max(1_000L, (t.seconds * 1000).toLong())
             items(ORDER.filter { (t.series[it]?.size ?: 0) >= 2 }, key = { it.name }) { m ->
                 val samples = t.series.getValue(m)
-                ChartCard(m, samples, samples.maxOf { it.v }.toDouble(), "max", window, "su ${clock(t.seconds)}")
+                ChartCard(m, samples, samples.maxOf { it.v }.toDouble(), "max", window, t("su ${clock(t.seconds)}", "over ${clock(t.seconds)}"))
             }
         }
     }
@@ -300,7 +302,7 @@ private fun ChartCard(m: Metric, samples: List<Sample>, headline: Double?, headl
             Text(m.unit, color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 3.dp))
         }
         Text(
-            "min ${fmt(lo?.toDouble(), m.decimals, signed)} · max ${fmt(hi?.toDouble(), m.decimals, signed)} · $span",
+            t("min ${fmt(lo?.toDouble(), m.decimals, signed)} · max ${fmt(hi?.toDouble(), m.decimals, signed)} · $span", "min ${fmt(lo?.toDouble(), m.decimals, signed)} · max ${fmt(hi?.toDouble(), m.decimals, signed)} · $span"),
             color = Pal.muted, fontSize = 12.sp, style = Digits,
         )
         Canvas(Modifier.fillMaxWidth().height(130.dp).padding(top = 10.dp)) {
@@ -338,11 +340,11 @@ private fun PathCard(path: List<PathPoint>) {
     val top = path.maxOf { it.kmh }.coerceAtLeast(1f)
     Column(Modifier.fillMaxWidth().glass(20.dp).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Percorso", color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Text(t("Percorso", "Route"), color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
             Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Pal.green))
-            Text(" partenza   ", color = Pal.muted, fontSize = 12.sp)
+            Text(t(" partenza   ", " start   "), color = Pal.muted, fontSize = 12.sp)
             Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Pal.text))
-            Text(" arrivo", color = Pal.muted, fontSize = 12.sp)
+            Text(t(" arrivo", " finish"), color = Pal.muted, fontSize = 12.sp)
         }
         Canvas(Modifier.fillMaxWidth().height(280.dp).padding(top = 10.dp)) {
             val k = cos(Math.toRadians(path.map { it.lat }.average()))

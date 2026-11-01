@@ -34,6 +34,7 @@ import com.mithole.cruscotto.obd.Level
 import com.mithole.cruscotto.obd.Live
 import com.mithole.cruscotto.obd.Metric
 import com.mithole.cruscotto.obd.Profile
+import com.mithole.cruscotto.obd.t
 
 /**
  * Modalità HUD: col tablet appoggiato sul cruscotto, di notte, il parabrezza riflette i numeri.
@@ -88,7 +89,7 @@ fun HudScreen(live: Live, profile: Profile, onExit: () -> Unit, startMirrored: B
             }
         }
         Text(
-            "Tocca per uscire · tieni premuto per ${if (mirrored) "non specchiare" else "specchiare"}",
+            t("Tocca per uscire · tieni premuto per ${if (mirrored) "non specchiare" else "specchiare"}", "Tap to exit · long-press to ${if (mirrored) "unmirror" else "mirror"}"),
             color = Pal.muted.copy(alpha = 0.6f), fontSize = 13.sp,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
         )

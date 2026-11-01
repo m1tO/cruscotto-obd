@@ -100,15 +100,15 @@ object ObdParse {
         val (a, b, c, dd) = d
         val diesel = (b and 0x08) != 0
         val monitors = mutableListOf<Monitor>()
-        listOf("Mancate accensioni", "Sistema carburante", "Componenti").forEachIndexed { i, name ->
+        listOf(t("Mancate accensioni", "Misfire"), t("Sistema carburante", "Fuel system"), t("Componenti", "Components")).forEachIndexed { i, name ->
             if ((b shr i) and 1 == 1) monitors += Monitor(name, (b shr (i + 4)) and 1 == 0)
         }
         val names = if (diesel) {
-            listOf("Catalizzatore NMHC", "Riduzione NOx", null, "Pressione turbo", null,
-                "Sensore gas di scarico", "Filtro antiparticolato", "EGR / fasatura variabile")
+            listOf(t("Catalizzatore NMHC", "NMHC catalyst"), t("Riduzione NOx", "NOx reduction"), null, t("Pressione turbo", "Boost pressure"), null,
+                t("Sensore gas di scarico", "Exhaust gas sensor"), t("Filtro antiparticolato", "Particulate filter"), t("EGR / fasatura variabile", "EGR / variable timing"))
         } else {
-            listOf("Catalizzatore", "Catalizzatore riscaldato", "Sistema evaporativo", "Aria secondaria",
-                "Gas del climatizzatore", "Sonda lambda", "Riscaldatore sonda lambda", "EGR / fasatura variabile")
+            listOf(t("Catalizzatore", "Catalyst"), t("Catalizzatore riscaldato", "Heated catalyst"), t("Sistema evaporativo", "Evaporative system"), t("Aria secondaria", "Secondary air"),
+                t("Gas del climatizzatore", "A/C refrigerant"), t("Sonda lambda", "O2 sensor"), t("Riscaldatore sonda lambda", "O2 sensor heater"), t("EGR / fasatura variabile", "EGR / variable timing"))
         }
         names.forEachIndexed { i, name ->
             if (name != null && (c shr i) and 1 == 1) monitors += Monitor(name, (dd shr i) and 1 == 0)

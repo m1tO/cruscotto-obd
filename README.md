@@ -2,11 +2,11 @@
 
 **A custom OBD-II dashboard for Android tablets.** Plug a cheap ELM327 dongle into your car, and Cruscotto ("dashboard" in Italian) turns the tablet into a live instrument cluster with diagnostics, performance timing, tyre pressure and trip logging.
 
-I built it because every OBD app I tried looked dated and buried the numbers I care about. It's a personal project, sideloaded as an APK and not on the Play Store. The UI is in Italian.
+I built it because every OBD app I tried looked dated and buried the numbers I care about. It's a personal project, sideloaded as an APK and not on the Play Store. The UI is in **Italian or English**, switchable in the app.
 
-![Main dashboard](app/screenshots/1_cruscotto.png)
+![Main dashboard](app/screenshots/en_1_dashboard.png)
 
-> All screenshots use the built-in demo mode: a fake ELM327 that runs the same code paths as a real dongle.
+> All screenshots use the built-in demo mode: a fake ELM327 that runs the same code paths as a real dongle. The ones in Italian show the other UI language.
 
 ## Features
 
@@ -15,31 +15,32 @@ I built it because every OBD app I tried looked dated and buried the numbers I c
 - **Performance**: automatic 0–50, 0–100 and 80–120 km/h timing, with per-car records, plus estimated power and torque. It also has a "dyno" mode that computes power from acceleration in a known gear.
 - **Engine check-up**: built up while you drive. It covers fuel trims (to spot vacuum leaks), battery and alternator, thermostat, intercooler and turbo.
 - **Gear detection**: learns your gearbox ratios from RPM and speed, with no setup needed.
-- **Charts and recordings**: live charts of the last 3 minutes. Recordings export as CSV in a format that Italian Excel opens directly (semicolon separator, decimal comma).
+- **Charts and recordings**: live charts of the last 3 minutes. Recordings export as CSV that Excel opens directly, in the format of the UI language.
 - **Tyre pressure**: BLE TPMS valve-cap sensors with per-wheel assignment and slow-puncture warnings. The decoder is still experimental.
 - **Trip log**: distance, fuel used and cost per trip.
 - **HUD mode**: a mirrored display you can reflect on the windscreen at night.
 - **Voice alerts**: spoken warnings for a cold engine or a hot turbo.
 - **CAN bus listener**: records raw CAN traffic (ATMA) and summarises it by ID. It helps reverse-engineer manufacturer-specific signals.
 - **Per-car profiles**: settings, records, gear ratios and dyno results are stored per VIN, so one tablet can serve several cars.
+- **Italian or English**: chosen in the Car tab, and it follows the device language until you pick one. It covers every screen, fault-code descriptions, voice alerts, number and date formats, and the CSV format: semicolons and decimal commas in Italian, standard commas and decimal points in English.
 
 ## Screenshots
 
 <table>
   <tr>
-    <td><img src="app/screenshots/10_analisi.png" alt="Performance and engine check-up"><br><sub>Performance timing, engine check-up, trip log</sub></td>
-    <td><img src="app/screenshots/2_errori.png" alt="Fault codes"><br><sub>Fault codes and freeze frame</sub></td>
+    <td><img src="app/screenshots/en_10_analysis.png" alt="Performance and engine check-up"><br><sub>Performance timing, engine check-up, trip log</sub></td>
+    <td><img src="app/screenshots/en_2_faults.png" alt="Fault codes"><br><sub>Fault codes and freeze frame</sub></td>
   </tr>
   <tr>
-    <td><img src="app/screenshots/3_grafici.png" alt="Live charts"><br><sub>Live charts</sub></td>
-    <td><img src="app/screenshots/14_gomme.png" alt="Tyre pressure"><br><sub>Tyre pressure (BLE TPMS)</sub></td>
+    <td><img src="app/screenshots/en_3_charts.png" alt="Live charts"><br><sub>Live charts</sub></td>
+    <td><img src="app/screenshots/en_14_tyres.png" alt="Tyre pressure"><br><sub>Tyre pressure (BLE TPMS)</sub></td>
   </tr>
   <tr>
     <td><img src="app/screenshots/8_cruscotto_diesel.png" alt="Diesel dashboard"><br><sub>Adapts to diesel engines…</sub></td>
     <td><img src="app/screenshots/7_cruscotto_aspirato.png" alt="Naturally aspirated dashboard"><br><sub>…and naturally aspirated ones (vacuum gauge)</sub></td>
   </tr>
   <tr>
-    <td><img src="app/screenshots/4_auto.png" alt="Car info"><br><sub>Car info, supported PIDs, manual overrides</sub></td>
+    <td><img src="app/screenshots/en_4_car.png" alt="Car info"><br><sub>Car info, supported PIDs, manual overrides</sub></td>
     <td><img src="app/screenshots/0_collegamento.png" alt="Connection screen"><br><sub>Connect over Wi-Fi or Bluetooth</sub></td>
   </tr>
   <tr>

@@ -47,7 +47,7 @@ class WifiLink(
 
     override suspend fun open() {
         val network = findWifi()
-            ?: throw IOException("Il tablet non è collegato a nessun Wi-Fi: collegalo alla rete del dongle dalle impostazioni Wi-Fi.")
+            ?: throw IOException(t("Il tablet non è collegato a nessun Wi-Fi: collegalo alla rete del dongle dalle impostazioni Wi-Fi.", "The tablet isn't connected to any Wi-Fi: join the dongle's network from the Wi-Fi settings."))
         val targets = candidates(network)
         withContext(Dispatchers.IO) {
             var last: Exception? = null
@@ -68,7 +68,7 @@ class WifiLink(
                 }
             }
             val tried = targets.joinToString(", ") { "${it.first}:${it.second}" }
-            throw IOException("Nessun dongle risponde ($tried). Il tablet è sulla rete Wi-Fi del dongle, non su quella di casa?", last)
+            throw IOException(t("Nessun dongle risponde ($tried). Il tablet è sulla rete Wi-Fi del dongle, non su quella di casa?", "No dongle answers ($tried). Is the tablet on the dongle's Wi-Fi network, not your home one?"), last)
         }
     }
 

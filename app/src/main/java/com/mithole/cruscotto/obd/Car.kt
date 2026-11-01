@@ -1,12 +1,14 @@
 package com.mithole.cruscotto.obd
 
 /** Carburante: rapporto stechiometrico aria/carburante e densità in g/L, per stimare il consumo dal flusso d'aria. */
-enum class Fuel(val label: String, val afr: Double, val density: Double?) {
-    PETROL("Benzina", 14.7, 745.0),
-    DIESEL("Diesel", 14.5, 832.0),
-    LPG("GPL", 15.5, 540.0),
-    CNG("Metano", 17.2, null), // il metano si misura a kg, non a litri
+enum class Fuel(private val labelIt: String, private val labelEn: String, val afr: Double, val density: Double?) {
+    PETROL("Benzina", "Petrol", 14.7, 745.0),
+    DIESEL("Diesel", "Diesel", 14.5, 832.0),
+    LPG("GPL", "LPG", 15.5, 540.0),
+    CNG("Metano", "CNG", 17.2, null), // il metano si misura a kg, non a litri
     ;
+
+    val label: String get() = t(labelIt, labelEn)
 
     companion object {
         /** PID 01 51 (tipo di carburante); sulle bifuel dice quello in uso in quel momento. */

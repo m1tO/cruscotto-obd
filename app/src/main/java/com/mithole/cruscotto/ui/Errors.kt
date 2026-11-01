@@ -44,6 +44,8 @@ import com.mithole.cruscotto.obd.Status
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.mithole.cruscotto.obd.t
+import com.mithole.cruscotto.obd.L
 
 @Composable
 fun ErrorsScreen(diag: Diag, connected: Boolean, onRead: () -> Unit, onClear: () -> Unit, modifier: Modifier = Modifier) {
@@ -61,7 +63,7 @@ fun ErrorsScreen(diag: Diag, connected: Boolean, onRead: () -> Unit, onClear: ()
                 OutlinedButton(onClick = onRead, enabled = !busy) {
                     Icon(Ic.refresh, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Rileggi")
+                    Text(t("Rileggi", "Read again"))
                 }
                 Spacer(Modifier.width(10.dp))
                 Button(
@@ -71,7 +73,7 @@ fun ErrorsScreen(diag: Diag, connected: Boolean, onRead: () -> Unit, onClear: ()
                 ) {
                     Icon(Ic.delete, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Cancella errori")
+                    Text(t("Cancella errori", "Clear faults"))
                 }
             }
         }
@@ -80,28 +82,28 @@ fun ErrorsScreen(diag: Diag, connected: Boolean, onRead: () -> Unit, onClear: ()
                 if (diag.loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 4.dp), color = Pal.red)
                 diag.message?.let { Text(it, color = Pal.amber, fontSize = 15.sp) }
                 diag.readAt?.let {
-                    Text("Ultima lettura alle ${SimpleDateFormat("HH:mm:ss", Locale.ITALY).format(Date(it))}", color = Pal.muted, fontSize = 13.sp)
+                    Text(t("Ultima lettura alle ${SimpleDateFormat("HH:mm:ss", Locale.ITALY).format(Date(it))}", "Last read at ${SimpleDateFormat("HH:mm:ss", L.locale).format(Date(it))}"), color = Pal.muted, fontSize = 13.sp)
                 }
             }
         }
 
-        section("Errori memorizzati", null, diag.stored, Pal.red, "Nessun errore memorizzato.")
+        section(t("Errori memorizzati", "Stored faults"), null, diag.stored, Pal.red, t("Nessun errore memorizzato.", "No stored faults."))
         section(
-            "In attesa", "Visti una volta e non ancora confermati: se si ripetono diventano errori veri.",
-            diag.pending, Pal.amber, "Nessuno.",
+            t("In attesa", "Pending"), t("Visti una volta e non ancora confermati: se si ripetono diventano errori veri.", "Seen once and not yet confirmed: if they happen again they become real faults."),
+            diag.pending, Pal.amber, t("Nessuno.", "None."),
         )
         diag.permanent?.let {
             section(
-                "Permanenti", "Non si cancellano a mano: spariscono quando la centralina verifica che il guasto è risolto.",
-                it, Pal.violet, "Nessuno.",
+                t("Permanenti", "Permanent"), t("Non si cancellano a mano: spariscono quando la centralina verifica che il guasto è risolto.", "They can't be cleared by hand: they go away when the ECU verifies the fault is fixed."),
+                it, Pal.violet, t("Nessuno.", "None."),
             )
         }
         diag.freeze?.let { ff -> item { FreezeCard(ff) } }
         diag.status?.let { s -> if (s.monitors.isNotEmpty()) item { ReadinessCard(s) } }
         item {
             Text(
-                "Qui ci sono gli errori di motore ed emissioni (OBD standard). ABS, airbag e carrozzeria " +
-                    "usano la diagnosi propria di ogni marca e con un dongle ELM327 generico non si leggono.",
+                t("Qui ci sono gli errori di motore ed emissioni (OBD standard). ABS, airbag e carrozzeria ", "These are engine and emissions faults (standard OBD). ABS, airbag and body systems ") +
+                    t("usano la diagnosi propria di ogni marca e con un dongle ELM327 generico non si leggono.", "use each manufacturer's own diagnostics and can't be read with a generic ELM327 dongle."),
                 color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
             )
         }
@@ -111,21 +113,21 @@ fun ErrorsScreen(diag: Diag, connected: Boolean, onRead: () -> Unit, onClear: ()
         AlertDialog(
             onDismissRequest = { ask = false },
             containerColor = Pal.surface2,
-            title = { Text("Cancellare gli errori?") },
+            title = { Text(t("Cancellare gli errori?", "Clear the faults?")) },
             text = {
                 Text(
-                    "Si cancellano i codici, le condizioni registrate al momento del guasto e i test di autodiagnosi, " +
-                        "che ripartono da zero. La spia si spegne, ma se il guasto c'è ancora torna.\n\n" +
-                        "Fallo a quadro acceso e motore spento.",
+                    t("Si cancellano i codici, le condizioni registrate al momento del guasto e i test di autodiagnosi, ", "This clears the codes, the conditions recorded when the fault happened and the self-tests, ") +
+                        t("che ripartono da zero. La spia si spegne, ma se il guasto c'è ancora torna.\n\n", "which start again from zero. The warning light goes off, but if the fault is still there it comes back.\n\n") +
+                        t("Fallo a quadro acceso e motore spento.", "Do it with the ignition on and the engine off."),
                 )
             },
             confirmButton = {
                 Button(
                     onClick = { ask = false; onClear() },
                     colors = ButtonDefaults.buttonColors(containerColor = Pal.red, contentColor = Color.White),
-                ) { Text("Cancella") }
+                ) { Text(t("Cancella", "Clear")) }
             },
-            dismissButton = { TextButton(onClick = { ask = false }) { Text("Annulla", color = Pal.text) } },
+            dismissButton = { TextButton(onClick = { ask = false }) { Text(t("Annulla", "Cancel"), color = Pal.text) } },
         )
     }
 }
@@ -149,9 +151,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
 @Composable
 private fun MilHeader(status: Status?, modifier: Modifier = Modifier) {
     val (color, text) = when {
-        status == null -> Pal.muted to "Spia motore: N/D"
-        status.mil -> Pal.amber to "Spia motore accesa"
-        else -> Pal.green to "Spia motore spenta"
+        status == null -> Pal.muted to t("Spia motore: N/D", "Check engine: N/A")
+        status.mil -> Pal.amber to t("Spia motore accesa", "Check engine light on")
+        else -> Pal.green to t("Spia motore spenta", "Check engine light off")
     }
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Icon(if (status?.mil == false) Ic.check else Ic.warning, null, tint = color, modifier = Modifier.size(34.dp))
@@ -160,7 +162,7 @@ private fun MilHeader(status: Status?, modifier: Modifier = Modifier) {
             Text(text, color = Pal.text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             status?.let {
                 Text(
-                    if (it.dtcCount == 1) "1 errore confermato" else "${it.dtcCount} errori confermati",
+                    if (it.dtcCount == 1) t("1 errore confermato", "1 confirmed fault") else t("${it.dtcCount} errori confermati", "${it.dtcCount} confirmed faults"),
                     color = Pal.muted, fontSize = 14.sp,
                 )
             }
@@ -189,11 +191,11 @@ private fun DtcCard(dtc: Dtc, color: Color) {
 @Composable
 private fun FreezeCard(ff: FreezeFrame) {
     Column(Modifier.fillMaxWidth().glass(18.dp).padding(18.dp)) {
-        Text("Condizioni quando è comparso ${ff.dtc.code}", color = Pal.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-        Text("La centralina le ha registrate nel momento del guasto.", color = Pal.muted, fontSize = 13.sp)
+        Text(t("Condizioni quando è comparso ${ff.dtc.code}", "Conditions when ${ff.dtc.code} appeared"), color = Pal.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        Text(t("La centralina le ha registrate nel momento del guasto.", "The ECU recorded them at the moment of the fault."), color = Pal.muted, fontSize = 13.sp)
         VSpace(12)
         if (ff.values.isEmpty()) {
-            Text("La centralina non ha salvato i dettagli.", color = Pal.muted)
+            Text(t("La centralina non ha salvato i dettagli.", "The ECU didn't save the details."), color = Pal.muted)
         } else {
             ff.values.entries.chunked(4).forEach { row ->
                 Row(Modifier.padding(vertical = 6.dp)) {
@@ -217,15 +219,15 @@ private fun ReadinessCard(s: Status) {
     Column(Modifier.fillMaxWidth().glass(18.dp).clickable { open = !open }.padding(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Test di autodiagnosi", color = Pal.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Text("$done su ${s.monitors.size} completati", color = if (done == s.monitors.size) Pal.green else Pal.amber, fontSize = 14.sp)
+                Text(t("Test di autodiagnosi", "Self-tests"), color = Pal.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(t("$done su ${s.monitors.size} completati", "$done of ${s.monitors.size} complete"), color = if (done == s.monitors.size) Pal.green else Pal.amber, fontSize = 14.sp)
             }
-            Text(if (open) "Chiudi" else "Dettagli", color = Pal.cyan, fontSize = 15.sp)
+            Text(if (open) t("Chiudi", "Close") else t("Dettagli", "Details"), color = Pal.cyan, fontSize = 15.sp)
         }
         if (open) {
             VSpace(10)
             Text(
-                "Dopo una cancellazione degli errori ripartono da zero e si completano da soli guidando normalmente per qualche giorno.",
+                t("Dopo una cancellazione degli errori ripartono da zero e si completano da soli guidando normalmente per qualche giorno.", "After clearing the faults they start again from zero and complete by themselves after a few days of normal driving."),
                 color = Pal.muted, fontSize = 13.sp,
             )
             VSpace(6)
@@ -234,7 +236,7 @@ private fun ReadinessCard(s: Status) {
                     StatusDot(if (it.complete) Pal.green else Pal.amber)
                     Spacer(Modifier.width(12.dp))
                     Text(it.name, color = Pal.text, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                    Text(if (it.complete) "Completato" else "Non completato", color = if (it.complete) Pal.green else Pal.amber, fontSize = 14.sp)
+                    Text(if (it.complete) t("Completato", "Complete") else t("Non completato", "Not complete"), color = if (it.complete) Pal.green else Pal.amber, fontSize = 14.sp)
                 }
             }
         }

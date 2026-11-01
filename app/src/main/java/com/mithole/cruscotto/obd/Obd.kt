@@ -179,7 +179,11 @@ object Obd {
     @Volatile private var lastDtcCount = -1
 
     fun init(context: Context) {
-        if (prefs == null) prefs = context.getSharedPreferences("cruscotto", Context.MODE_PRIVATE)
+        if (prefs == null) {
+            val p = context.getSharedPreferences("cruscotto", Context.MODE_PRIVATE)
+            prefs = p
+            L.lang = Lang.fromTag(p.getString("set.lang", null)) ?: Lang.forDevice(context.resources.configuration.locales[0])
+        }
         if (cm == null) cm = context.applicationContext.getSystemService(ConnectivityManager::class.java)
         if (sniffDir == null) sniffDir = File(context.filesDir, "ascolto")
         if (recorder == null) {
@@ -221,6 +225,12 @@ object Obd {
             Wheel.entries.forEach { w -> s.tires[w]?.let { ed.putString("set.tire." + w.name, it) } ?: ed.remove("set.tire." + w.name) }
             ed.apply()
         }
+    }
+
+    /** Lingua dell'app, scelta nella scheda Auto; vale per tutte le auto. */
+    fun setLanguage(l: Lang) {
+        L.lang = l
+        prefs?.edit()?.putString("set.lang", l.tag)?.apply()
     }
 
     /** Monta il sensore [address] sulla ruota [w] (null la libera); un sensore sta su una ruota sola. */
@@ -347,10 +357,10 @@ object Obd {
         val file = dir?.let { File(it, "ascolto_$stamp.txt") }
         val info = _info.value
         val header = listOf(
-            "Cruscotto · ascolto della rete CAN · ${java.text.SimpleDateFormat("d/M/yyyy HH:mm", java.util.Locale.ITALY).format(java.util.Date(now))}",
-            "Dongle: $label · ${info.elm ?: "?"} · protocollo ${info.protocol ?: "?"}" + if (demoNow) " · DEMO, dati simulati" else "",
-            "VIN: ${info.vin ?: "N/D"} · marca: ${Wmi.brand(info.vin) ?: "N/D"}",
-            "Valori OBD all'inizio: " + obdSnapshot(_live.value.values),
+            t("Cruscotto · ascolto della rete CAN · ${java.text.SimpleDateFormat("d/M/yyyy HH:mm", java.util.Locale.ITALY).format(java.util.Date(now))}", "Cruscotto · CAN bus listening · ${java.text.SimpleDateFormat("d/M/yyyy HH:mm", L.locale).format(java.util.Date(now))}"),
+            t("Dongle: $label · ${info.elm ?: "?"} · protocollo ${info.protocol ?: "?"}", "Dongle: $label · ${info.elm ?: "?"} · protocol ${info.protocol ?: "?"}") + if (demoNow) t(" · DEMO, dati simulati", " · DEMO, simulated data") else "",
+            t("VIN: ${info.vin ?: "N/D"} · marca: ${Wmi.brand(info.vin) ?: "N/D"}", "VIN: ${info.vin ?: "N/A"} · make: ${Wmi.brand(info.vin) ?: "N/A"}"),
+            t("Valori OBD all'inizio: ", "OBD values at start: ") + obdSnapshot(_live.value.values),
         )
         val writer = runCatching {
             dir?.mkdirs()
@@ -359,7 +369,7 @@ object Obd {
             file?.bufferedWriter(Charsets.UTF_8)
         }.getOrNull()
         val sniffer = Sniffer(writer)
-        writer?.let { w -> header.forEach { w.write("# $it\n") }; w.write("# ms indirizzo byte…\n") }
+        writer?.let { w -> header.forEach { w.write("# $it\n") }; w.write(t("# ms indirizzo byte…\n", "# ms id bytes…\n")) }
         _sniff.value = SniffState(running = true, windows = plan.size)
         sniffing = true
         var problem: String? = null
@@ -385,18 +395,18 @@ object Obd {
                 val end = runCatching {
                     e.endSniff()
                     readSnapshot(e)
-                }.getOrElse { "non lette (${it.message})" }
+                }.getOrElse { t("non lette (${it.message})", "not read (${it.message})") }
                 sniffing = false
                 val summary = sniffer.summary(
                     header + listOf(
-                        "Valori OBD alla fine: $end",
-                        "Durata: ${sniffer.windows.sumOf { it.ms } / 1000} s in ${sniffer.windows.size} finestre" +
-                            (if (sniffer.windows.any { it.mask != 0 }) " (la prima su tutto, poi un gruppo di indirizzi alla volta)" else " (filtri del dongle non disponibili)") +
-                            (if (stopped) " · interrotto a mano" else "") + (problem?.let { " · fermato da un errore: $it" } ?: ""),
+                        t("Valori OBD alla fine: $end", "OBD values at end: $end"),
+                        t("Durata: ${sniffer.windows.sumOf { it.ms } / 1000} s in ${sniffer.windows.size} finestre", "Duration: ${sniffer.windows.sumOf { it.ms } / 1000} s in ${sniffer.windows.size} windows") +
+                            (if (sniffer.windows.any { it.mask != 0 }) t(" (la prima su tutto, poi un gruppo di indirizzi alla volta)", " (the first on everything, then one group of IDs at a time)") else t(" (filtri del dongle non disponibili)", " (dongle filters not available)")) +
+                            (if (stopped) t(" · interrotto a mano", " · stopped by hand") else "") + (problem?.let { t(" · fermato da un errore: $it", " · stopped by an error: $it") } ?: ""),
                     ),
                 )
                 runCatching {
-                    writer?.write("# Valori OBD alla fine: $end\n# --- Riassunto ---\n")
+                    writer?.write(t("# Valori OBD alla fine: $end\n# --- Riassunto ---\n", "# OBD values at end: $end\n# --- Summary ---\n"))
                     writer?.write(summary.lines().joinToString("\n") { "# $it" })
                     writer?.close()
                 }
@@ -404,7 +414,7 @@ object Obd {
                     frames = sniffer.frames,
                     ids = sniffer.stats.size,
                     overflows = sniffer.overflows,
-                    message = problem ?: if (sniffer.frames == 0) "Nessun messaggio sentito: il motore è acceso?" else null,
+                    message = problem ?: if (sniffer.frames == 0) t("Nessun messaggio sentito: il motore è acceso?", "No messages heard: is the engine running?") else null,
                     summary = summary.takeIf { sniffer.frames > 0 },
                     file = file?.takeIf { it.exists() && sniffer.frames > 0 },
                 )
@@ -414,8 +424,8 @@ object Obd {
 
     private fun obdSnapshot(v: Map<Metric, Double>): String =
         listOf(Metric.RPM, Metric.SPEED, Metric.MAP, Metric.COOLANT, Metric.IAT, Metric.PEDAL, Metric.VOLT)
-            .mapNotNull { m -> v[m]?.let { "${m.label} ${String.format(java.util.Locale.ITALY, "%.${m.decimals}f", it)} ${m.unit}" } }
-            .joinToString(" · ").ifEmpty { "N/D" }
+            .mapNotNull { m -> v[m]?.let { "${m.label} ${String.format(L.locale, "%.${m.decimals}f", it)} ${m.unit}" } }
+            .joinToString(" · ").ifEmpty { t("N/D", "N/A") }
 
     private suspend fun readSnapshot(e: Elm327): String {
         val v = HashMap<Metric, Double>()
@@ -501,7 +511,7 @@ object Obd {
             } catch (ce: CancellationException) {
                 throw ce
             } catch (ex: Exception) {
-                "Cancellazione non riuscita: ${ex.message}"
+                t("Cancellazione non riuscita: ${ex.message}", "Clearing failed: ${ex.message}")
             }
             delay(1500)
             loadDiag(e)
@@ -524,7 +534,7 @@ object Obd {
         analyzer = Analyzer()
         history.clear()
         lastDtcCount = -1
-        _conn.value = Conn.Connecting(label, "Avvio…")
+        _conn.value = Conn.Connecting(label, t("Avvio…", "Starting…"))
         job = scope.launch { runLoop(label, demo, factory) }
     }
 
@@ -533,11 +543,11 @@ object Obd {
         while (true) {
             val link = factory()
             try {
-                _conn.value = Conn.Connecting(label, "Collego il dongle…")
+                _conn.value = Conn.Connecting(label, t("Collego il dongle…", "Connecting to the dongle…"))
                 link.open()
                 val e = Elm327(link)
                 e.init { _conn.value = Conn.Connecting(label, it) }
-                _conn.value = Conn.Connecting(label, "Leggo cosa offre l'auto…")
+                _conn.value = Conn.Connecting(label, t("Leggo cosa offre l'auto…", "Reading what the car supports…"))
                 val pids = e.supportedPids()
                 val vin = try { e.vin() } catch (ex: CancellationException) { throw ex } catch (ex: Exception) { null }
                 // Carburante: dal PID 51 se c'è, altrimenti dal tipo di accensione che la centralina dichiara.
@@ -592,7 +602,7 @@ object Obd {
         } catch (ce: CancellationException) {
             throw ce
         } catch (ex: Exception) {
-            _diag.update { it.copy(loading = false, message = "Lettura non riuscita: ${ex.message}") }
+            _diag.update { it.copy(loading = false, message = t("Lettura non riuscita: ${ex.message}", "Reading failed: ${ex.message}")) }
         }
     }
 

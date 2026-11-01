@@ -40,6 +40,7 @@ import com.mithole.cruscotto.obd.Settings
 import com.mithole.cruscotto.obd.TireLevel
 import com.mithole.cruscotto.obd.TireState
 import com.mithole.cruscotto.obd.Wheel
+import com.mithole.cruscotto.obd.t
 
 fun TireLevel.color(): Color = when (this) {
     TireLevel.OK -> Pal.green
@@ -64,16 +65,16 @@ fun TiresScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         if (!perms.scan || !perms.location) {
-            Card("Permessi") {
+            Card(t("Permessi", "Permissions")) {
                 Text(
-                    "Per sentire i sensori delle gomme servono i permessi \"Dispositivi nelle vicinanze\" e \"Posizione\". " +
-                        "La posizione serve anche al GPS, per la velocità vera e il percorso delle registrazioni.",
+                    t("Per sentire i sensori delle gomme servono i permessi \"Dispositivi nelle vicinanze\" e \"Posizione\". ", "To hear the tyre sensors the app needs the \"Nearby devices\" and \"Location\" permissions. ") +
+                        t("La posizione serve anche al GPS, per la velocità vera e il percorso delle registrazioni.", "Location is also used by the GPS, for true speed and the route of recordings."),
                     color = Pal.muted, fontSize = 14.sp,
                 )
-                Button(onClick = onPerms, modifier = Modifier.padding(top = 10.dp)) { Text("Concedi i permessi") }
+                Button(onClick = onPerms, modifier = Modifier.padding(top = 10.dp)) { Text(t("Concedi i permessi", "Grant permissions")) }
             }
         }
-        Card("Pressioni") {
+        Card(t("Pressioni", "Pressures")) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TireBox(states.first { it.wheel == Wheel.FL })
@@ -86,24 +87,24 @@ fun TiresScreen(
                 }
             }
             Spacer(Modifier.height(10.dp))
-            Stepper("Consigliata davanti", settings.tireFront) { onSettings(settings.copy(tireFront = it)) }
-            Stepper("Consigliata dietro", settings.tireRear) { onSettings(settings.copy(tireRear = it)) }
+            Stepper(t("Consigliata davanti", "Recommended front"), settings.tireFront) { onSettings(settings.copy(tireFront = it)) }
+            Stepper(t("Consigliata dietro", "Recommended rear"), settings.tireRear) { onSettings(settings.copy(tireRear = it)) }
             Text(
-                "Le pressioni consigliate sono sul montante della portiera del guidatore. Si confrontano a gomme fredde: " +
-                    "dopo un viaggio salgono di 0,2–0,3 bar ed è normale.",
+                t("Le pressioni consigliate sono sul montante della portiera del guidatore. Si confrontano a gomme fredde: ", "Recommended pressures are on the driver's door pillar. Compare them with cold tyres: ") +
+                    t("dopo un viaggio salgono di 0,2–0,3 bar ed è normale.", "after a drive they rise by 0.2–0.3 bar, which is normal."),
                 color = Pal.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp),
             )
         }
-        Card("Sensori nelle vicinanze") {
+        Card(t("Sensori nelle vicinanze", "Sensors nearby")) {
             Text(
-                "Avvicina un sensore al tablet e assegnalo alla sua ruota. I tappini Bluetooth più diffusi si leggono già; " +
-                    "per gli altri compaiono i dati grezzi: copiali e si aggiunge il loro formato.",
+                t("Avvicina un sensore al tablet e assegnalo alla sua ruota. I tappini Bluetooth più diffusi si leggono già; ", "Bring a sensor close to the tablet and assign it to its wheel. The most common Bluetooth valve caps are already read; ") +
+                    t("per gli altri compaiono i dati grezzi: copiali e si aggiunge il loro formato.", "for others the raw data shows up: copy it and their format gets added."),
                 color = Pal.muted, fontSize = 13.sp,
             )
             Spacer(Modifier.height(8.dp))
             val shown = devices.sortedWith(compareByDescending<BleSeen> { it.reading != null }.thenByDescending { it.rssi }).take(30)
             if (shown.isEmpty()) {
-                Text(if (perms.scan) "Non sento ancora niente." else "Ricerca spenta: mancano i permessi.", color = Pal.muted, fontSize = 15.sp)
+                Text(if (perms.scan) t("Non sento ancora niente.", "Nothing heard yet.") else t("Ricerca spenta: mancano i permessi.", "Scanning off: permissions missing."), color = Pal.muted, fontSize = 15.sp)
             }
             shown.forEach { d -> DeviceRow(d, settings, onAssign) }
         }
@@ -123,8 +124,8 @@ private fun TireBox(s: TireState) {
         Text(
             listOfNotNull(
                 s.reading?.tempC?.let { "${fmt(it)} °C" },
-                s.reading?.batteryPct?.let { "batteria $it %" },
-            ).joinToString(" · ").ifEmpty { "consigliata ${fmt(s.target, 1)} bar" },
+                s.reading?.batteryPct?.let { t("batteria $it %", "battery $it %") },
+            ).joinToString(" · ").ifEmpty { t("consigliata ${fmt(s.target, 1)} bar", "recommended ${fmt(s.target, 1)} bar") },
             color = Pal.muted, fontSize = 13.sp, style = Digits,
         )
         Text(s.note, color = c, fontSize = 13.sp)
@@ -170,13 +171,13 @@ private fun DeviceRow(d: BleSeen, s: Settings, onAssign: (Wheel, String?) -> Uni
     val mounted = s.tires.entries.firstOrNull { it.value == d.address }?.key
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(14.dp)).background(Pal.surface2).padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(d.name ?: "Senza nome", color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Text(d.name ?: t("Senza nome", "Unnamed"), color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
             Text("${d.rssi} dBm", color = Pal.muted, fontSize = 13.sp, style = Digits)
         }
         Text(d.address, color = Pal.muted, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
         d.reading?.let { r ->
             Text(
-                "${fmt(r.bar, 2)} bar · ${fmt(r.tempC)} °C · batteria ${r.batteryPct ?: "N/D"} %",
+                t("${fmt(r.bar, 2)} bar · ${fmt(r.tempC)} °C · batteria ${r.batteryPct ?: "N/D"} %", "${fmt(r.bar, 2)} bar · ${fmt(r.tempC)} °C · battery ${r.batteryPct ?: "N/A"} %"),
                 color = Pal.green, fontSize = 14.sp, style = Digits, modifier = Modifier.padding(top = 2.dp),
             )
         }
@@ -204,9 +205,9 @@ fun TireCard(states: List<TireState>, onClick: () -> Unit, modifier: Modifier = 
         modifier.glass(20.dp).clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        Text("Gomme", color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        Text(t("Gomme", "Tyres"), color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
         if (none) {
-            Text("nessun sensore", color = Pal.muted, fontSize = 13.sp)
+            Text(t("nessun sensore", "no sensor"), color = Pal.muted, fontSize = 13.sp)
         } else {
             listOf(Wheel.FL to Wheel.FR, Wheel.RL to Wheel.RR).forEach { (l, r) ->
                 Row {

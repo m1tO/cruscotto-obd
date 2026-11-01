@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.mithole.cruscotto.obd.Obd
 import com.mithole.cruscotto.obd.WIFI_PORT
 import com.mithole.cruscotto.obd.parseHostPort
+import com.mithole.cruscotto.obd.t
 
 data class PairedDevice(val name: String, val address: String)
 
@@ -145,11 +146,11 @@ fun ConnectContent(
                 }
                 Spacer(Modifier.width(10.dp))
                 Button(onClick = onDemo, colors = ButtonDefaults.buttonColors(containerColor = Pal.cyan, contentColor = Pal.bg)) {
-                    Text("Prova la demo", fontWeight = FontWeight.SemiBold)
+                    Text(t("Prova la demo", "Try the demo"), fontWeight = FontWeight.SemiBold)
                 }
             }
             Text(
-                "Inserisci il dongle nella presa OBD (sotto il cruscotto, lato guida), accendi il quadro e scegli il dongle qui sotto: Bluetooth o Wi-Fi.",
+                t("Inserisci il dongle nella presa OBD (sotto il cruscotto, lato guida), accendi il quadro e scegli il dongle qui sotto: Bluetooth o Wi-Fi.", "Plug the dongle into the OBD port (under the dashboard, driver's side), switch the ignition on and pick the dongle below: Bluetooth or Wi-Fi."),
                 color = Pal.muted, fontSize = 16.sp, modifier = Modifier.padding(bottom = 16.dp),
             )
             Column(
@@ -159,22 +160,22 @@ fun ConnectContent(
             Text("Wi-Fi", color = Pal.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             WifiCard(wifiHost, wifiLast, onConnectWifi)
             Text(
-                "Prima collega il tablet alla rete Wi-Fi del dongle (tasto Wi-Fi in alto): di solito si chiama WiFi_OBDII o simile, " +
-                    "senza password. Se Android avvisa che la rete non ha internet, scegli di restare collegato.",
+                t("Prima collega il tablet alla rete Wi-Fi del dongle (tasto Wi-Fi in alto): di solito si chiama WiFi_OBDII o simile, ", "First connect the tablet to the dongle's Wi-Fi network (Wi-Fi button at the top): it's usually called WiFi_OBDII or similar, ") +
+                    t("senza password. Se Android avvisa che la rete non ha internet, scegli di restare collegato.", "with no password. If Android warns that the network has no internet, choose to stay connected."),
                 color = Pal.muted, fontSize = 14.sp,
             )
             Text("Bluetooth", color = Pal.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
             when {
-                noBluetooth -> Notice("Questo dispositivo non ha il Bluetooth.")
-                needPermission -> Notice("Serve il permesso per usare il Bluetooth.", "Consenti", onGrant)
-                bluetoothOff -> Notice("Il Bluetooth è spento.", "Accendi", onEnable)
-                devices.isEmpty() -> Notice("Nessun dispositivo abbinato.", "Impostazioni Bluetooth", onSettings)
+                noBluetooth -> Notice(t("Questo dispositivo non ha il Bluetooth.", "This device has no Bluetooth."))
+                needPermission -> Notice(t("Serve il permesso per usare il Bluetooth.", "Bluetooth permission is needed."), t("Consenti", "Allow"), onGrant)
+                bluetoothOff -> Notice(t("Il Bluetooth è spento.", "Bluetooth is off."), t("Accendi", "Turn on"), onEnable)
+                devices.isEmpty() -> Notice(t("Nessun dispositivo abbinato.", "No paired devices."), t("Impostazioni Bluetooth", "Bluetooth settings"), onSettings)
                 else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     devices.forEach { DeviceRow(it, it.address == savedAddress) { onConnect(it) } }
                 }
             }
             Text(
-                "Il dongle non c'è? Abbinalo prima dalle impostazioni Bluetooth del tablet (tasto in alto): di solito si chiama OBDII e il PIN è 1234 o 0000.",
+                t("Il dongle non c'è? Abbinalo prima dalle impostazioni Bluetooth del tablet (tasto in alto): di solito si chiama OBDII e il PIN è 1234 o 0000.", "Dongle not listed? Pair it first from the tablet's Bluetooth settings (button at the top): it's usually called OBDII and the PIN is 1234 or 0000."),
                 color = Pal.muted, fontSize = 14.sp,
             )
             }
@@ -207,9 +208,9 @@ private fun DeviceRow(d: PairedDevice, last: Boolean, onClick: () -> Unit) {
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(d.name, color = Pal.text, fontSize = 17.sp, fontWeight = FontWeight.Medium)
-            Text(if (last) "${d.address} · usato l'ultima volta" else d.address, color = Pal.muted, fontSize = 13.sp)
+            Text(if (last) t("${d.address} · usato l'ultima volta", "${d.address} · last used") else d.address, color = Pal.muted, fontSize = 13.sp)
         }
-        Text("Collega", color = Pal.cyan, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Text(t("Collega", "Connect"), color = Pal.cyan, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -229,18 +230,18 @@ private fun WifiCard(host: String?, last: Boolean, onConnect: (String?) -> Unit)
                 Text("OBD Wi-Fi", color = Pal.text, fontSize = 17.sp, fontWeight = FontWeight.Medium)
                 Text(
                     when {
-                        host == null -> "indirizzo trovato da solo"
-                        last -> "$host · usato l'ultima volta"
+                        host == null -> t("indirizzo trovato da solo", "address found automatically")
+                        last -> t("$host · usato l'ultima volta", "$host · last used")
                         else -> host
                     },
                     color = Pal.muted, fontSize = 13.sp,
                 )
             }
-            Text("Collega", color = Pal.cyan, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(t("Collega", "Connect"), color = Pal.cyan, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
         if (!editing) {
             TextButton(onClick = { editing = true }, modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)) {
-                Text("Indirizzo a mano", color = Pal.muted, fontSize = 14.sp)
+                Text(t("Indirizzo a mano", "Manual address"), color = Pal.muted, fontSize = 14.sp)
             }
         } else {
             Row(
@@ -265,7 +266,7 @@ private fun WifiCard(host: String?, last: Boolean, onConnect: (String?) -> Unit)
                     onClick = { onConnect(typed.ifBlank { null }) },
                     enabled = typedOk,
                     colors = ButtonDefaults.buttonColors(containerColor = Pal.cyan, contentColor = Pal.bg),
-                ) { Text("Collega") }
+                ) { Text(t("Collega", "Connect")) }
             }
         }
     }

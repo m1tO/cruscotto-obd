@@ -27,7 +27,7 @@ class Elm327(private val link: ElmLink) {
     suspend fun raw(cmd: String, timeoutMs: Long = 1500): List<String> = mutex.withLock {
         val text = link.exchange(cmd, timeoutMs)
         if (text.isBlank()) {
-            if (++blanks >= 6) throw ObdException("Il dongle non risponde più")
+            if (++blanks >= 6) throw ObdException(t("Il dongle non risponde più", "The dongle stopped responding"))
         } else {
             blanks = 0
         }
@@ -35,20 +35,20 @@ class Elm327(private val link: ElmLink) {
     }
 
     suspend fun init(step: (String) -> Unit) {
-        step("Preparo il dongle…")
+        step(t("Preparo il dongle…", "Setting up the dongle…"))
         raw("ATZ", 4000)
         for (c in listOf("ATE0", "ATL0", "ATS0", "ATH0", "ATAT1", "ATSP0")) raw(c)
         version = raw("ATI").firstOrNull { it.contains("ELM", ignoreCase = true) } ?: "ELM327"
-        step("Cerco l'auto: il quadro deve essere acceso…")
+        step(t("Cerco l'auto: il quadro deve essere acceso…", "Looking for the car: the ignition must be on…"))
         val first = raw("0100", 15000)
         if (ObdParse.mode01(first, 0x00) == null) {
             val txt = first.joinToString(" ")
             throw ObdException(
                 when {
                     txt.contains("UNABLE", true) || txt.contains("NO DATA", true) ->
-                        "Il dongle risponde, l'auto no: accendi il quadro."
-                    txt.isBlank() -> "Il dongle non risponde."
-                    else -> "Risposta inattesa dall'auto: $txt"
+                        t("Il dongle risponde, l'auto no: accendi il quadro.", "The dongle answers, the car doesn't: switch the ignition on.")
+                    txt.isBlank() -> t("Il dongle non risponde.", "The dongle isn't responding.")
+                    else -> t("Risposta inattesa dall'auto: $txt", "Unexpected reply from the car: $txt")
                 }
             )
         }
@@ -118,10 +118,10 @@ class Elm327(private val link: ElmLink) {
         val lines = raw("04", 8000)
         val msgs = ObdParse.messages(lines)
         return when {
-            msgs.any { it.firstOrNull() == 0x44 } -> "Errori cancellati."
+            msgs.any { it.firstOrNull() == 0x44 } -> t("Errori cancellati.", "Faults cleared.")
             msgs.any { it.size >= 3 && it[0] == 0x7F && it[1] == 0x04 && it[2] == 0x22 } ->
-                "La centralina ha rifiutato: spegni il motore, lascia il quadro acceso e riprova."
-            else -> "La centralina non ha confermato la cancellazione (${lines.joinToString(" ")})."
+                t("La centralina ha rifiutato: spegni il motore, lascia il quadro acceso e riprova.", "The ECU refused: switch the engine off, leave the ignition on and try again.")
+            else -> t("La centralina non ha confermato la cancellazione (${lines.joinToString(" ")}).", "The ECU didn't confirm the clearing (${lines.joinToString(" ")}).")
         }
     }
 
@@ -131,8 +131,8 @@ class Elm327(private val link: ElmLink) {
      * l'ascolto riparte finché la finestra non è finita. [t0] è l'istante da cui contare i millisecondi dei messaggi.
      */
     suspend fun sniff(sniffer: Sniffer, plan: List<SniffWindow>, t0: Long, onWindow: (Int) -> Unit) {
-        if (!isCan) throw ObdException("L'ascolto funziona solo con le auto su rete CAN; quest'auto usa $protocol.")
-        if (!accepted("ATH1")) throw ObdException("Il dongle non sa mostrare gli indirizzi dei messaggi (ATH1).")
+        if (!isCan) throw ObdException(t("L'ascolto funziona solo con le auto su rete CAN; quest'auto usa $protocol.", "Listening only works on cars with a CAN bus; this car uses $protocol."))
+        if (!accepted("ATH1")) throw ObdException(t("Il dongle non sa mostrare gli indirizzi dei messaggi (ATH1).", "The dongle can't show message IDs (ATH1)."))
         raw("ATS1")
         raw("ATCAF0")
         // I filtri per indirizzo non li hanno tutti i cloni: senza, si ascolta tutto in ogni finestra.
@@ -160,7 +160,7 @@ class Elm327(private val link: ElmLink) {
                         sniffer.line(line, System.currentTimeMillis() - t0)
                     }
                 }
-                if (refused && sniffer.frames == 0) throw ObdException("Il dongle non sa ascoltare la rete (comando ATMA rifiutato).")
+                if (refused && sniffer.frames == 0) throw ObdException(t("Il dongle non sa ascoltare la rete (comando ATMA rifiutato).", "The dongle can't listen to the bus (ATMA command refused)."))
             }
             sniffer.window(real.copy(ms = System.currentTimeMillis() - start))
             // Se il dongle si è saturato proprio mentre lo fermavamo, l'invio che doveva fermarlo gli fa ripetere ATMA:

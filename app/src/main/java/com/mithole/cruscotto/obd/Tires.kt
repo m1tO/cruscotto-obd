@@ -5,12 +5,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.abs
 
-enum class Wheel(val label: String, val short: String) {
-    FL("Anteriore sinistra", "Ant. sx"),
-    FR("Anteriore destra", "Ant. dx"),
-    RL("Posteriore sinistra", "Post. sx"),
-    RR("Posteriore destra", "Post. dx"),
+enum class Wheel(private val labelIt: String, private val labelEn: String, private val shortIt: String, private val shortEn: String) {
+    FL("Anteriore sinistra", "Front left", "Ant. sx", "Front L"),
+    FR("Anteriore destra", "Front right", "Ant. dx", "Front R"),
+    RL("Posteriore sinistra", "Rear left", "Post. sx", "Rear L"),
+    RR("Posteriore destra", "Rear right", "Post. dx", "Rear R"),
     ;
+
+    val label: String get() = t(labelIt, labelEn)
+    val short: String get() = t(shortIt, shortEn)
 
     val front: Boolean get() = this == FL || this == FR
 }
@@ -104,9 +107,9 @@ object Tpms {
     fun tireState(
         w: Wheel, address: String?, r: TireReading?, target: Double, now: Long, all: Map<Wheel, TireReading?>,
     ): TireState {
-        if (address == null) return TireState(w, null, target, TireLevel.NONE, "nessun sensore")
-        if (r == null) return TireState(w, null, target, TireLevel.STALE, "in attesa del segnale")
-        if (now - r.at > 15 * 60_000) return TireState(w, r, target, TireLevel.STALE, "segnale vecchio")
+        if (address == null) return TireState(w, null, target, TireLevel.NONE, t("nessun sensore", "no sensor"))
+        if (r == null) return TireState(w, null, target, TireLevel.STALE, t("in attesa del segnale", "waiting for signal"))
+        if (now - r.at > 15 * 60_000) return TireState(w, r, target, TireLevel.STALE, t("segnale vecchio", "stale signal"))
         // Lo stesso asse deve avere la stessa pressione: una differenza vuol dire una gomma che perde.
         val twin = when (w) {
             Wheel.FL -> Wheel.FR
@@ -116,10 +119,10 @@ object Tpms {
         }
         val other = all[twin]?.takeIf { now - it.at < 15 * 60_000 }
         return when {
-            r.bar < target - 0.4 -> TireState(w, r, target, TireLevel.FLAT, "molto sgonfia")
-            r.bar < target - 0.2 -> TireState(w, r, target, TireLevel.LOW, "da gonfiare")
-            other != null && other.bar - r.bar > 0.2 -> TireState(w, r, target, TireLevel.LOW, "più bassa dell'altra: possibile foratura lenta")
-            r.bar > target + 0.5 -> TireState(w, r, target, TireLevel.HIGH, "troppo gonfia")
+            r.bar < target - 0.4 -> TireState(w, r, target, TireLevel.FLAT, t("molto sgonfia", "very low"))
+            r.bar < target - 0.2 -> TireState(w, r, target, TireLevel.LOW, t("da gonfiare", "needs air"))
+            other != null && other.bar - r.bar > 0.2 -> TireState(w, r, target, TireLevel.LOW, t("più bassa dell'altra: possibile foratura lenta", "lower than the other side: possible slow puncture"))
+            r.bar > target + 0.5 -> TireState(w, r, target, TireLevel.HIGH, t("troppo gonfia", "overinflated"))
             else -> TireState(w, r, target, TireLevel.OK, if (abs(r.bar - target) < 0.1) "giusta" else "ok")
         }
     }

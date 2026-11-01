@@ -42,6 +42,7 @@ import com.mithole.cruscotto.obd.Metric
 import com.mithole.cruscotto.obd.Profile
 import com.mithole.cruscotto.obd.Status
 import com.mithole.cruscotto.obd.TireState
+import com.mithole.cruscotto.obd.t
 
 /** Un riquadro in basso; [level] da 0 a 1 riempie la barretta sotto il numero (null = niente barretta). */
 data class TileData(val label: String, val value: String, val unit: String, val color: Color = Pal.text, val level: Float? = null)
@@ -80,20 +81,20 @@ fun tilesFor(live: Live): List<TileData> {
     val speed = v[Metric.SPEED]
     val fuel = v[Metric.FUEL_RATE]
     val consumption = when {
-        live.instantL100 != null -> TileData("Consumo", fmt(live.instantL100, 1), "L/100 km", level = level(live.instantL100, 0.0, 30.0))
-        fuel != null && (speed ?: 0.0) < 5 -> TileData("Consumo", fmt(fuel, 1), "L/h", level = level(fuel, 0.0, 5.0))
-        else -> TileData("Consumo", "N/D", "L/100 km")
+        live.instantL100 != null -> TileData(t("Consumo", "Fuel use"), fmt(live.instantL100, 1), "L/100 km", level = level(live.instantL100, 0.0, 30.0))
+        fuel != null && (speed ?: 0.0) < 5 -> TileData(t("Consumo", "Fuel use"), fmt(fuel, 1), "L/h", level = level(fuel, 0.0, 5.0))
+        else -> TileData(t("Consumo", "Fuel use"), t("N/D", "N/A"), "L/100 km")
     }
     val iat = v[Metric.IAT]
     return listOf(
-        TileData("Acqua", fmt(v[Metric.COOLANT]), "°C", coolantColor(v[Metric.COOLANT]), level(v[Metric.COOLANT], 40.0, 120.0)),
-        TileData("Aria aspirata", fmt(iat), "°C", if ((iat ?: 0.0) > 55) Pal.amber else Pal.text, level(iat, 0.0, 80.0)),
-        TileData("Batteria", fmt(v[Metric.VOLT], 1), "V", voltColor(v[Metric.VOLT], v[Metric.RPM]), level(v[Metric.VOLT], 11.0, 15.0)),
-        TileData("Carico motore", fmt(v[Metric.LOAD]), "%", level = level(v[Metric.LOAD], 0.0, 100.0)),
+        TileData(t("Acqua", "Coolant"), fmt(v[Metric.COOLANT]), "°C", coolantColor(v[Metric.COOLANT]), level(v[Metric.COOLANT], 40.0, 120.0)),
+        TileData(t("Aria aspirata", "Intake air"), fmt(iat), "°C", if ((iat ?: 0.0) > 55) Pal.amber else Pal.text, level(iat, 0.0, 80.0)),
+        TileData(t("Batteria", "Battery"), fmt(v[Metric.VOLT], 1), "V", voltColor(v[Metric.VOLT], v[Metric.RPM]), level(v[Metric.VOLT], 11.0, 15.0)),
+        TileData(t("Carico motore", "Engine load"), fmt(v[Metric.LOAD]), "%", level = level(v[Metric.LOAD], 0.0, 100.0)),
         consumption,
-        TileData("Media viaggio", fmt(live.tripL100, 1), "L/100 km", level = level(live.tripL100, 0.0, 20.0)),
-        TileData("Anticipo", fmt(v[Metric.TIMING], 1), "°", level = level(v[Metric.TIMING], -10.0, 40.0)),
-        TileData("Acceleratore", fmt(v[Metric.PEDAL] ?: v[Metric.THROTTLE]), "%", level = level(v[Metric.PEDAL] ?: v[Metric.THROTTLE], 0.0, 100.0)),
+        TileData(t("Media viaggio", "Trip average"), fmt(live.tripL100, 1), "L/100 km", level = level(live.tripL100, 0.0, 20.0)),
+        TileData(t("Anticipo", "Ignition timing"), fmt(v[Metric.TIMING], 1), "°", level = level(v[Metric.TIMING], -10.0, 40.0)),
+        TileData(t("Acceleratore", "Accelerator"), fmt(v[Metric.PEDAL] ?: v[Metric.THROTTLE]), "%", level = level(v[Metric.PEDAL] ?: v[Metric.THROTTLE], 0.0, 100.0)),
     )
 }
 
@@ -188,9 +189,9 @@ private fun GearBadge(live: Live, modifier: Modifier = Modifier) {
     val moving = (live.values[Metric.SPEED] ?: 0.0) >= 5
     val text = live.gear?.toString() ?: if (!learning && moving) "N" else "–"
     Column(modifier) {
-        Text("MARCIA", color = Pal.muted, fontSize = 12.sp, letterSpacing = 1.sp)
+        Text(t("MARCIA", "GEAR"), color = Pal.muted, fontSize = 12.sp, letterSpacing = 1.sp)
         Text(text, color = if (live.gear != null) Pal.text else Pal.muted, fontSize = 64.sp, fontWeight = FontWeight.SemiBold, style = Digits)
-        if (learning) Text("sto imparando\ni rapporti", color = Pal.muted, fontSize = 12.sp, lineHeight = 15.sp)
+        if (learning) Text(t("sto imparando\ni rapporti", "learning\nthe ratios"), color = Pal.muted, fontSize = 12.sp, lineHeight = 15.sp)
     }
 }
 
@@ -242,10 +243,10 @@ fun TileView(t: TileData, modifier: Modifier = Modifier) {
 @Composable
 private fun MilCard(status: Status?, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val (icon, color, title, sub) = when {
-        status == null -> Quad(Ic.warning, Pal.muted, "Spia motore", "N/D")
-        status.mil -> Quad(Ic.warning, Pal.amber, "Spia motore", "accesa · " + errorsText(status.dtcCount))
-        status.dtcCount > 0 -> Quad(Ic.warning, Pal.amber, "Spia motore", "spenta · " + errorsText(status.dtcCount))
-        else -> Quad(Ic.check, Pal.green, "Spia motore", "spenta · nessun errore")
+        status == null -> Quad(Ic.warning, Pal.muted, t("Spia motore", "Check engine"), t("N/D", "N/A"))
+        status.mil -> Quad(Ic.warning, Pal.amber, t("Spia motore", "Check engine"), t("accesa · ", "on · ") + errorsText(status.dtcCount))
+        status.dtcCount > 0 -> Quad(Ic.warning, Pal.amber, t("Spia motore", "Check engine"), t("spenta · ", "off · ") + errorsText(status.dtcCount))
+        else -> Quad(Ic.check, Pal.green, t("Spia motore", "Check engine"), t("spenta · nessun errore", "off · no faults"))
     }
     Row(
         modifier.glass(20.dp).clickable(onClick = onClick)
@@ -261,14 +262,14 @@ private fun MilCard(status: Status?, onClick: () -> Unit, modifier: Modifier = M
     }
 }
 
-private fun errorsText(n: Int) = if (n == 1) "1 errore" else "$n errori"
+private fun errorsText(n: Int) = if (n == 1) t("1 errore", "1 fault") else t("$n errori", "$n faults")
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 @Composable
 private fun TripCard(live: Live, modifier: Modifier = Modifier) {
     Column(modifier.glass(20.dp).padding(horizontal = 16.dp, vertical = 10.dp)) {
-        Text("Viaggio", color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        Text(t("Viaggio", "Trip"), color = Pal.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
         Text("${fmt(live.tripKm, 1)} km", color = Pal.muted, fontSize = 13.sp, style = Digits)
         Text("max ${fmt(live.peaks[Metric.SPEED])} km/h", color = Pal.muted, fontSize = 13.sp, style = Digits)
     }

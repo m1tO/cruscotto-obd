@@ -26,6 +26,7 @@ import com.mithole.cruscotto.obd.GpsStatus
 import com.mithole.cruscotto.obd.Obd
 import com.mithole.cruscotto.obd.Tpms
 import java.util.Locale
+import com.mithole.cruscotto.obd.L
 
 /** Permessi dei sensori del tablet: posizione per il GPS, posizione e "dispositivi nelle vicinanze" per le gomme. */
 data class SensorPermissions(val location: Boolean, val scan: Boolean) {
@@ -122,14 +123,14 @@ fun SensorsEffect(perms: SensorPermissions) {
     }
 }
 
-/** Dice a voce gli avvisi dell'auto, in italiano. */
+/** Dice a voce gli avvisi dell'auto, nella lingua dell'app. */
 @Composable
 fun VoiceEffect() {
     val ctx = LocalContext.current
     val tts = remember { arrayOfNulls<TextToSpeech>(1) }
     DisposableEffect(Unit) {
         tts[0] = TextToSpeech(ctx.applicationContext) { status ->
-            if (status == TextToSpeech.SUCCESS) tts[0]?.language = Locale.ITALIAN
+            if (status == TextToSpeech.SUCCESS) tts[0]?.language = L.locale
         }
         onDispose {
             tts[0]?.shutdown()
@@ -137,6 +138,10 @@ fun VoiceEffect() {
         }
     }
     LaunchedEffect(Unit) {
-        Obd.alerts.collect { text -> tts[0]?.speak(text, TextToSpeech.QUEUE_ADD, null, text.hashCode().toString()) }
+        Obd.alerts.collect { text ->
+            // La lingua si può cambiare mentre l'app è aperta: la voce la segue a ogni frase.
+            tts[0]?.language = L.locale
+            tts[0]?.speak(text, TextToSpeech.QUEUE_ADD, null, text.hashCode().toString())
+        }
     }
 }

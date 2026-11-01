@@ -1,26 +1,30 @@
 package com.mithole.cruscotto.obd
 
-enum class Metric(val label: String, val unit: String, val decimals: Int) {
-    RPM("Giri motore", "giri/min", 0),
-    SPEED("Velocità", "km/h", 0),
-    BOOST("Turbo", "bar", 2),
-    MAP("Pressione collettore", "kPa", 0),
-    COOLANT("Acqua", "°C", 0),
-    IAT("Aria aspirata", "°C", 0),
-    VOLT("Batteria", "V", 1),
-    LOAD("Carico motore", "%", 0),
-    PEDAL("Acceleratore", "%", 0),
-    THROTTLE("Farfalla", "%", 0),
-    TIMING("Anticipo", "°", 1),
-    MAF("Flusso aria", "g/s", 1),
-    FUEL_RATE("Consumo orario", "L/h", 1),
-    STFT("Correzione miscela breve", "%", 1),
-    LTFT("Correzione miscela lunga", "%", 1),
-    FUEL_LEVEL("Carburante", "%", 0),
-    OIL("Olio", "°C", 0),
-    AMBIENT("Temperatura esterna", "°C", 0),
-    BARO("Pressione atmosferica", "kPa", 0),
-    LAMBDA("Lambda comandata", "λ", 2),
+enum class Metric(private val labelIt: String, private val labelEn: String, private val unitIt: String, private val unitEn: String, val decimals: Int) {
+    RPM("Giri motore", "Engine speed", "giri/min", "rpm", 0),
+    SPEED("Velocità", "Speed", "km/h", "km/h", 0),
+    BOOST("Turbo", "Boost", "bar", "bar", 2),
+    MAP("Pressione collettore", "Manifold pressure", "kPa", "kPa", 0),
+    COOLANT("Acqua", "Coolant", "°C", "°C", 0),
+    IAT("Aria aspirata", "Intake air", "°C", "°C", 0),
+    VOLT("Batteria", "Battery", "V", "V", 1),
+    LOAD("Carico motore", "Engine load", "%", "%", 0),
+    PEDAL("Acceleratore", "Accelerator", "%", "%", 0),
+    THROTTLE("Farfalla", "Throttle", "%", "%", 0),
+    TIMING("Anticipo", "Ignition timing", "°", "°", 1),
+    MAF("Flusso aria", "Air flow", "g/s", "g/s", 1),
+    FUEL_RATE("Consumo orario", "Fuel rate", "L/h", "L/h", 1),
+    STFT("Correzione miscela breve", "Short-term fuel trim", "%", "%", 1),
+    LTFT("Correzione miscela lunga", "Long-term fuel trim", "%", "%", 1),
+    FUEL_LEVEL("Carburante", "Fuel", "%", "%", 0),
+    OIL("Olio", "Oil", "°C", "°C", 0),
+    AMBIENT("Temperatura esterna", "Outside temperature", "°C", "°C", 0),
+    BARO("Pressione atmosferica", "Barometric pressure", "kPa", "kPa", 0),
+    LAMBDA("Lambda comandata", "Commanded lambda", "λ", "λ", 2),
+    ;
+
+    val label: String get() = t(labelIt, labelEn)
+    val unit: String get() = t(unitIt, unitEn)
 }
 
 class PidDef(val pid: Int, val metric: Metric, val size: Int, val decode: (List<Int>) -> Double)

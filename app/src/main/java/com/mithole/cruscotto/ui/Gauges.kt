@@ -39,6 +39,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
+import com.mithole.cruscotto.obd.t
 
 private const val RPM_START = 135f
 private const val RPM_SWEEP = 270f
@@ -204,7 +205,7 @@ fun RpmGauge(rpm: Double?, speed: Double?, max: Int, red: Int, shift: Int, modif
             tm, fmt(rpm), Offset(c.x, c.y + r * 0.74f), d * 0.075f,
             if (rpm != null) rpmColor(a, rpmRed) else Pal.muted, FontWeight.SemiBold,
         )
-        textAt(tm, "GIRI/MIN", Offset(c.x, c.y + r * 0.74f + d * 0.06f), d * 0.03f, Pal.muted, spacing = 0.3f)
+        textAt(tm, t("GIRI/MIN", "RPM"), Offset(c.x, c.y + r * 0.74f + d * 0.06f), d * 0.03f, Pal.muted, spacing = 0.3f)
     }
 }
 
@@ -351,14 +352,14 @@ fun BoostGauge(bar: Double?, peak: Double?, max: Double, red: Double?, modifier:
             val p = ang(peak.toFloat().coerceAtMost(bMax))
             drawLine(Pal.amber, polar(c, r - stroke * 0.7f, p), polar(c, r + stroke * 0.7f, p), strokeWidth = stroke * 0.18f, cap = StrokeCap.Round)
         }
-        val value = if (bar == null) "N/D" else fmt(a.toDouble(), 2, signed = true)
+        val value = if (bar == null) t("N/D", "N/A") else fmt(a.toDouble(), 2, signed = true)
         if (turbo) {
             // Turbina al centro, numero sotto, nel vuoto lasciato in basso dall'arco.
             val glow = if (bar == null) 0f else max(0f, a / bMax).coerceAtMost(1f)
             turbine(Offset(c.x, c.y - d * 0.02f), d * 0.125f, spin, boostColor(a, bRed), glow)
             textAt(tm, value, Offset(c.x, c.y + d * 0.245f), d * 0.11f, Pal.text, FontWeight.Bold, glow = boostColor(a, bRed).copy(alpha = 0.5f))
             val px = d * 0.04f
-            val sub = if (peak != null) "BAR TURBO  ·  " else "BAR TURBO"
+            val sub = if (peak != null) t("BAR TURBO  ·  ", "BAR BOOST  ·  ") else t("BAR TURBO", "BAR BOOST")
             if (peak != null) {
                 val maxText = "MAX ${fmt(peak, 2, signed = true)}"
                 val style = TextStyle(fontSize = px.toSp(), fontFamily = Tech, fontFeatureSettings = "tnum")
@@ -372,7 +373,7 @@ fun BoostGauge(bar: Double?, peak: Double?, max: Double, red: Double?, modifier:
             }
         } else {
             textAt(tm, value, Offset(c.x, c.y), d * 0.125f, Pal.text, FontWeight.Bold, glow = Pal.cyan.copy(alpha = 0.5f))
-            textAt(tm, "BAR COLLETTORE", Offset(c.x, c.y + d * 0.1f), d * 0.038f, Pal.muted, spacing = 0.2f)
+            textAt(tm, t("BAR COLLETTORE", "BAR MANIFOLD"), Offset(c.x, c.y + d * 0.1f), d * 0.038f, Pal.muted, spacing = 0.2f)
         }
     }
 }

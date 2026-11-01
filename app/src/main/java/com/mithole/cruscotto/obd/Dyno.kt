@@ -70,7 +70,7 @@ class Dyno {
         state = if (result != null) {
             DynoState(last = result, message = null)
         } else {
-            state.copy(running = false, gear = null, fromRpm = null, message = "Tirata troppo corta: serve almeno 1500 giri a fondo nella stessa marcia.")
+            state.copy(running = false, gear = null, fromRpm = null, message = t("Tirata troppo corta: serve almeno 1500 giri a fondo nella stessa marcia.", "Pull too short: needs at least 1500 rpm at full throttle in the same gear."))
         }
         return result
     }

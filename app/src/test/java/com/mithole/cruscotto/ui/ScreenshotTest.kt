@@ -35,6 +35,10 @@ import com.mithole.cruscotto.obd.Tpms
 import com.mithole.cruscotto.obd.Trip
 import com.mithole.cruscotto.obd.Wheel
 import com.mithole.cruscotto.obd.Status
+import com.mithole.cruscotto.obd.L
+import com.mithole.cruscotto.obd.Lang
+import com.mithole.cruscotto.obd.t
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,16 +73,18 @@ class ScreenshotTest {
         gearRatios = listOf(128.0, 72.0, 50.0, 39.3, 31.0, 26.0),
     )
 
-    private val status = Status(
+    // Getter, non valori fissi: i testi devono seguire la lingua impostata dal singolo test.
+    private val status: Status get() = Status(
         mil = true, dtcCount = 2,
         monitors = listOf(
-            Monitor("Mancate accensioni", true), Monitor("Sistema carburante", true), Monitor("Componenti", true),
-            Monitor("Catalizzatore", true), Monitor("Sistema evaporativo", false), Monitor("Sonda lambda", true),
-            Monitor("Riscaldatore sonda lambda", true),
+            Monitor(t("Mancate accensioni", "Misfire"), true), Monitor(t("Sistema carburante", "Fuel system"), true),
+            Monitor(t("Componenti", "Components"), true), Monitor(t("Catalizzatore", "Catalyst"), true),
+            Monitor(t("Sistema evaporativo", "Evaporative system"), false), Monitor(t("Sonda lambda", "O2 sensor"), true),
+            Monitor(t("Riscaldatore sonda lambda", "O2 sensor heater"), true),
         ),
     )
 
-    private val diag = Diag(
+    private val diag: Diag get() = Diag(
         readAt = 1_700_000_000_000,
         stored = listOf(Dtc("P0299"), Dtc("P0133")),
         pending = listOf(Dtc("P0300")),
@@ -97,17 +103,40 @@ class ScreenshotTest {
         Profile(detectedFuel = Fuel.PETROL, boostSeen = true),
     )
 
-    private val analysis = Analysis(
+    private val analysis: Analysis get() = Analysis(
         last = mapOf(Run.ZERO_50 to 3.9, Run.ZERO_100 to 8.6),
         best = mapOf(Run.ZERO_50 to 3.7, Run.ZERO_100 to 8.2, Run.MID_80_120 to 7.4),
         running = mapOf(Run.MID_80_120 to 4.3),
         powerCv = 131.0, powerRpm = 5450.0, torqueNm = 214.0, torqueRpm = 2650.0,
         checks = listOf(
-            Check("Miscela aria-benzina", Level.WARN, "minimo +13,8 % · in tiro +2,1 %", "Magra al minimo ma non sotto carico: tipico di un'aria falsa, cioè un manicotto o un tubo del vuoto che perde."),
-            Check("Batteria e alternatore", Level.OK, "14,1 V in moto · 12,6 V da spento", "La batteria tiene e l'alternatore carica il giusto."),
-            Check("Temperatura e termostato", Level.OK, "80 °C in 6,5 min", "Si scalda nei tempi giusti: termostato a posto."),
-            Check("Intercooler", Level.WAIT, "In misura", "Serve qualche secondo col turbo sopra 0,5 bar, dopo un tratto in movimento."),
-            Check("Turbo", Level.OK, "max +1,12 bar a 3400 giri", "La spinta più alta di questa sessione."),
+            Check(
+                t("Miscela aria-benzina", "Air-fuel mixture"), Level.WARN,
+                t("minimo +13,8 % · in tiro +2,1 %", "idle +13.8 % · under load +2.1 %"),
+                t(
+                    "Magra al minimo ma non sotto carico: tipico di un'aria falsa, cioè un manicotto o un tubo del vuoto che perde.",
+                    "Lean at idle but not under load: typical of an air leak, i.e. a leaking hose or vacuum line.",
+                ),
+            ),
+            Check(
+                t("Batteria e alternatore", "Battery and alternator"), Level.OK,
+                t("14,1 V in moto · 12,6 V da spento", "14.1 V running · 12.6 V engine off"),
+                t("La batteria tiene e l'alternatore carica il giusto.", "The battery holds up and the alternator charges correctly."),
+            ),
+            Check(
+                t("Temperatura e termostato", "Temperature and thermostat"), Level.OK, t("80 °C in 6,5 min", "80 °C in 6.5 min"),
+                t("Si scalda nei tempi giusti: termostato a posto.", "Warms up on time: thermostat OK."),
+            ),
+            Check(
+                "Intercooler", Level.WAIT, t("In misura", "Measuring"),
+                t(
+                    "Serve qualche secondo col turbo sopra 0,5 bar, dopo un tratto in movimento.",
+                    "Needs a few seconds above 0.5 bar of boost, after driving for a while.",
+                ),
+            ),
+            Check(
+                "Turbo", Level.OK, t("max +1,12 bar a 3400 giri", "max +1.12 bar at 3400 rpm"),
+                t("La spinta più alta di questa sessione.", "The highest boost of this session."),
+            ),
         ),
     )
 
@@ -170,6 +199,28 @@ class ScreenshotTest {
     }
 
     @Test fun dashboard() = shot("1_cruscotto", Tab.DASH)
+
+    // Le stesse schermate in inglese. L'oggetto L è condiviso fra i test: si rimette l'italiano dopo ognuno.
+    @After fun italianAgain() {
+        L.lang = Lang.IT
+    }
+
+    private fun english(name: String, tab: Tab) {
+        L.lang = Lang.EN
+        shot(name, tab)
+    }
+
+    @Test fun dashboardEn() = english("en_1_dashboard", Tab.DASH)
+
+    @Test fun analysisEn() = english("en_10_analysis", Tab.ANALYSIS)
+
+    @Test fun errorsEn() = english("en_2_faults", Tab.ERRORS)
+
+    @Test fun infoEn() = english("en_4_car", Tab.INFO)
+
+    @Test fun chartsEn() = english("en_3_charts", Tab.CHARTS)
+
+    @Test fun tiresEn() = english("en_14_tyres", Tab.TIRES)
 
     @Test fun errors() = shot("2_errori", Tab.ERRORS)
 

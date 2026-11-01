@@ -18,42 +18,43 @@ object DtcCodec {
     }
 }
 
-/** Descrizioni in italiano dei codici generici SAE più comuni. */
+/** Descrizioni in italiano e in inglese dei codici generici SAE più comuni. */
 object DtcText {
     fun system(code: String): String {
         val manufacturer = code.getOrNull(1) == '1' || (code[0] == 'P' && code.getOrNull(1) == '3')
         val base = when (code[0]) {
-            'C' -> "Telaio"
-            'B' -> "Carrozzeria"
-            'U' -> "Rete di comunicazione"
+            'C' -> t("Telaio", "Chassis")
+            'B' -> t("Carrozzeria", "Body")
+            'U' -> t("Rete di comunicazione", "Network")
             else -> when (code.getOrNull(2)) {
-                '0', '1', '2' -> "Aria e carburante"
-                '3' -> "Accensione"
-                '4' -> "Controllo emissioni"
-                '5' -> "Velocità e minimo"
-                '6' -> "Centralina"
-                '7', '8', '9' -> "Cambio"
-                else -> "Motore"
+                '0', '1', '2' -> t("Aria e carburante", "Air and fuel")
+                '3' -> t("Accensione", "Ignition")
+                '4' -> t("Controllo emissioni", "Emissions control")
+                '5' -> t("Velocità e minimo", "Speed and idle")
+                '6' -> t("Centralina", "ECU")
+                '7', '8', '9' -> t("Cambio", "Transmission")
+                else -> t("Motore", "Engine")
             }
         }
-        return if (manufacturer) "$base · specifico del costruttore" else base
+        return if (manufacturer) t("$base · specifico del costruttore", "$base · manufacturer-specific") else base
     }
 
     fun describe(code: String): String {
+        (if (L.en) TABLE_EN[code] else null)?.let { return it }
         TABLE[code]?.let { return it }
         val n = code.substring(1).toIntOrNull()
         if (code[0] == 'P' && n != null) {
             when (n) {
-                in 201..212 -> return "Circuito iniettore cilindro ${n - 200}"
-                in 301..312 -> return "Mancata accensione cilindro ${n - 300}"
-                in 351..362 -> return "Circuito bobina di accensione ${n - 350}"
+                in 201..212 -> return t("Circuito iniettore cilindro ${n - 200}", "Injector circuit, cylinder ${n - 200}")
+                in 301..312 -> return t("Mancata accensione cilindro ${n - 300}", "Misfire, cylinder ${n - 300}")
+                in 351..362 -> return t("Circuito bobina di accensione ${n - 350}", "Ignition coil circuit ${n - 350}")
             }
         }
         val manufacturer = code.getOrNull(1) == '1' || (code[0] == 'P' && code.getOrNull(1) == '3')
         return if (manufacturer) {
-            "Codice specifico del costruttore: il significato esatto dipende dalla marca e dal motore."
+            t("Codice specifico del costruttore: il significato esatto dipende dalla marca e dal motore.", "Manufacturer-specific code: the exact meaning depends on the make and engine.")
         } else {
-            "Codice generico non presente nella tabella dell'app."
+            t("Codice generico non presente nella tabella dell'app.", "Generic code not in the app's table.")
         }
     }
 
@@ -191,5 +192,141 @@ object DtcText {
         "U0121" to "Comunicazione persa con la centralina ABS",
         "U0140" to "Comunicazione persa con la centralina carrozzeria (BCM)",
         "U0155" to "Comunicazione persa con il quadro strumenti",
+    )
+
+    private val TABLE_EN = mapOf(
+        "P0010" to "Camshaft position actuator circuit (bank 1)",
+        "P0011" to "Camshaft timing over-advanced or system performance (bank 1)",
+        "P0012" to "Camshaft timing over-retarded (bank 1)",
+        "P0016" to "Crankshaft / camshaft position correlation (bank 1)",
+        "P0030" to "Upstream O2 sensor heater (B1 S1): control circuit",
+        "P0036" to "Downstream O2 sensor heater (B1 S2): control circuit",
+        "P0068" to "Manifold pressure / air flow does not match throttle position",
+        "P0087" to "Fuel pressure too low",
+        "P0088" to "Fuel pressure too high",
+        "P0100" to "Mass air flow sensor (MAF): circuit",
+        "P0101" to "Mass air flow sensor (MAF): range/performance",
+        "P0102" to "Mass air flow sensor (MAF): low input",
+        "P0103" to "Mass air flow sensor (MAF): high input",
+        "P0105" to "Manifold / barometric pressure sensor: circuit",
+        "P0106" to "Manifold / barometric pressure sensor: range/performance",
+        "P0107" to "Manifold pressure sensor: low input",
+        "P0108" to "Manifold pressure sensor: high input",
+        "P0110" to "Intake air temperature sensor: circuit",
+        "P0111" to "Intake air temperature sensor: range/performance",
+        "P0112" to "Intake air temperature sensor: low input",
+        "P0113" to "Intake air temperature sensor: high input",
+        "P0115" to "Coolant temperature sensor: circuit",
+        "P0116" to "Coolant temperature sensor: range/performance",
+        "P0117" to "Coolant temperature sensor: low input",
+        "P0118" to "Coolant temperature sensor: high input",
+        "P0120" to "Throttle / pedal position sensor A: circuit",
+        "P0121" to "Throttle position sensor A: range/performance",
+        "P0122" to "Throttle position sensor A: low input",
+        "P0123" to "Throttle position sensor A: high input",
+        "P0125" to "Engine not warm enough for closed-loop fuel control",
+        "P0128" to "Coolant below thermostat temperature (thermostat stuck open?)",
+        "P0130" to "Upstream O2 sensor (B1 S1): circuit",
+        "P0131" to "Upstream O2 sensor (B1 S1): low voltage",
+        "P0132" to "Upstream O2 sensor (B1 S1): high voltage",
+        "P0133" to "Upstream O2 sensor (B1 S1): slow response",
+        "P0134" to "Upstream O2 sensor (B1 S1): no activity",
+        "P0135" to "Upstream O2 sensor heater (B1 S1): circuit",
+        "P0136" to "Downstream O2 sensor (B1 S2): circuit",
+        "P0137" to "Downstream O2 sensor (B1 S2): low voltage",
+        "P0138" to "Downstream O2 sensor (B1 S2): high voltage",
+        "P0139" to "Downstream O2 sensor (B1 S2): slow response",
+        "P0140" to "Downstream O2 sensor (B1 S2): no activity",
+        "P0141" to "Downstream O2 sensor heater (B1 S2): circuit",
+        "P0171" to "System too lean (bank 1)",
+        "P0172" to "System too rich (bank 1)",
+        "P0217" to "Engine overheating",
+        "P0219" to "Engine overspeed",
+        "P0221" to "Throttle position sensor B: range/performance",
+        "P0222" to "Throttle position sensor B: low input",
+        "P0223" to "Throttle position sensor B: high input",
+        "P0234" to "Turbo overboost",
+        "P0235" to "Turbo boost sensor A: circuit",
+        "P0236" to "Turbo boost sensor A: range/performance",
+        "P0237" to "Turbo boost sensor A: low input",
+        "P0238" to "Turbo boost sensor A: high input",
+        "P0243" to "Turbo wastegate solenoid A: circuit",
+        "P0245" to "Turbo wastegate solenoid A: low",
+        "P0246" to "Turbo wastegate solenoid A: high",
+        "P0299" to "Turbo underboost",
+        "P0300" to "Random or multiple cylinder misfire",
+        "P0325" to "Knock sensor: circuit",
+        "P0326" to "Knock sensor: range/performance",
+        "P0327" to "Knock sensor: low input",
+        "P0328" to "Knock sensor: high input",
+        "P0335" to "Crankshaft position sensor: circuit",
+        "P0336" to "Crankshaft position sensor: range/performance",
+        "P0340" to "Camshaft position sensor: circuit",
+        "P0341" to "Camshaft position sensor: range/performance",
+        "P0400" to "Exhaust gas recirculation (EGR): flow",
+        "P0401" to "Exhaust gas recirculation (EGR): insufficient flow",
+        "P0420" to "Catalyst efficiency below threshold (bank 1)",
+        "P0441" to "Evaporative system: incorrect purge flow",
+        "P0442" to "Evaporative system: small leak",
+        "P0443" to "Canister purge valve: circuit",
+        "P0455" to "Evaporative system: large leak",
+        "P0456" to "Evaporative system: very small leak",
+        "P0480" to "Cooling fan 1: control circuit",
+        "P0481" to "Cooling fan 2: control circuit",
+        "P0500" to "Vehicle speed sensor",
+        "P0501" to "Vehicle speed sensor: range/performance",
+        "P0505" to "Idle control system",
+        "P0506" to "Idle speed lower than expected",
+        "P0507" to "Idle speed higher than expected",
+        "P0560" to "System voltage",
+        "P0562" to "System voltage low",
+        "P0563" to "System voltage high",
+        "P0571" to "Brake switch: circuit",
+        "P0600" to "ECU serial communication link",
+        "P0601" to "ECU: memory checksum error",
+        "P0602" to "ECU: programming error",
+        "P0603" to "ECU: keep-alive memory (KAM) error",
+        "P0604" to "ECU: RAM error",
+        "P0605" to "ECU: ROM error",
+        "P0606" to "ECU: processor fault",
+        "P0607" to "ECU: module performance",
+        "P0627" to "Fuel pump: control circuit",
+        "P0638" to "Throttle actuator: range/performance (bank 1)",
+        "P0641" to "Sensor reference voltage A: open circuit",
+        "P0645" to "A/C compressor relay: circuit",
+        "P0650" to "Check engine light (MIL): control circuit",
+        "P0651" to "Sensor reference voltage B: open circuit",
+        "P0685" to "ECU power relay: open circuit",
+        "P0700" to "Transmission reports a fault",
+        "P2096" to "Post-catalyst fuel trim: system too lean",
+        "P2097" to "Post-catalyst fuel trim: system too rich",
+        "P2100" to "Throttle actuator motor: open circuit",
+        "P2101" to "Throttle actuator motor: range/performance",
+        "P2106" to "Throttle actuator: forced limited power (limp mode)",
+        "P2111" to "Throttle actuator stuck open",
+        "P2112" to "Throttle actuator stuck closed",
+        "P2122" to "Accelerator pedal sensor D: low input",
+        "P2123" to "Accelerator pedal sensor D: high input",
+        "P2127" to "Accelerator pedal sensor E: low input",
+        "P2128" to "Accelerator pedal sensor E: high input",
+        "P2135" to "Throttle position sensors A/B: voltage mismatch",
+        "P2138" to "Accelerator pedal sensors D/E: voltage mismatch",
+        "P2177" to "System too lean off idle (bank 1)",
+        "P2178" to "System too rich off idle (bank 1)",
+        "P2187" to "System too lean at idle (bank 1)",
+        "P2188" to "System too rich at idle (bank 1)",
+        "P2195" to "Upstream O2 sensor (B1 S1) stuck lean",
+        "P2196" to "Upstream O2 sensor (B1 S1) stuck rich",
+        "P2261" to "Turbo bypass (pop-off) valve: mechanical fault",
+        "P2263" to "Turbo/supercharger system performance",
+        "P2270" to "Downstream O2 sensor (B1 S2) stuck lean",
+        "P2271" to "Downstream O2 sensor (B1 S2) stuck rich",
+        "P2279" to "Intake air system leak",
+        "U0001" to "High-speed CAN bus",
+        "U0100" to "Lost communication with engine ECU",
+        "U0101" to "Lost communication with transmission ECU",
+        "U0121" to "Lost communication with ABS module",
+        "U0140" to "Lost communication with body control module (BCM)",
+        "U0155" to "Lost communication with instrument cluster",
     )
 }

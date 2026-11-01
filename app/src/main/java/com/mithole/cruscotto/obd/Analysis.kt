@@ -28,7 +28,7 @@ data class Analysis(
 )
 
 private fun f(v: Double?, decimals: Int = 0, signed: Boolean = false): String =
-    if (v == null) "N/D" else String.format(Locale.ITALY, if (signed) "%+.${decimals}f" else "%.${decimals}f", v)
+    if (v == null) t("N/D", "N/A") else String.format(L.locale, if (signed) "%+.${decimals}f" else "%.${decimals}f", v)
 
 /** Cronometro di una prova. Gli istanti di partenza e arrivo si interpolano tra un campione e l'altro. */
 private class RunTimer(val run: Run) {
@@ -243,16 +243,16 @@ class Analyzer {
     )
 
     private fun mixture(has: Set<Metric>): Check {
-        val title = "Miscela aria-benzina"
+        val title = t("Miscela aria-benzina", "Air-fuel mixture")
         if (Metric.STFT !in has && Metric.LTFT !in has) {
-            return Check(title, Level.NA, "N/D", "La centralina non comunica quanto corregge la miscela.")
+            return Check(title, Level.NA, t("N/D", "N/A"), t("La centralina non comunica quanto corregge la miscela.", "The ECU doesn't report its fuel trims."))
         }
         val idle = idleTrim.after(20.0)
         val load = loadTrim.after(15.0)
         if (idle == null && load == null) {
             return Check(
-                title, Level.WAIT, "In misura",
-                "Servono mezzo minuto al minimo a motore caldo e qualche tratto in accelerazione.",
+                title, Level.WAIT, t("In misura", "Measuring"),
+                t("Servono mezzo minuto al minimo a motore caldo e qualche tratto in accelerazione.", "Needs half a minute at idle with a warm engine and a few stretches under acceleration."),
             )
         }
         val worst = listOfNotNull(idle, load).maxBy { abs(it) }
@@ -262,98 +262,98 @@ class Analyzer {
             else -> Level.OK
         }
         val detail = when {
-            level == Level.OK -> "La centralina corregge poco: aspirazione e iniezione sono a posto."
+            level == Level.OK -> t("La centralina corregge poco: aspirazione e iniezione sono a posto.", "The ECU barely corrects: intake and injection are fine.")
             idle != null && idle > 10 && (load == null || load < idle - 8) ->
-                "Magra al minimo ma non sotto carico: tipico di un'aria falsa, cioè un manicotto o un tubo del vuoto che perde."
+                t("Magra al minimo ma non sotto carico: tipico di un'aria falsa, cioè un manicotto o un tubo del vuoto che perde.", "Lean at idle but not under load: typical of an air leak, i.e. a leaking hose or vacuum line.")
             idle != null && load != null && idle > 10 && load > 10 ->
-                "Magra sempre: pressione della benzina bassa, iniettori sporchi o debimetro che legge poco."
-            load != null && load > 10 -> "Magra sotto carico: pompa o filtro della benzina che non stanno dietro."
-            else -> "Ricca: un iniettore che gocciola, una sonda lambda pigra o il debimetro sporco."
+                t("Magra sempre: pressione della benzina bassa, iniettori sporchi o debimetro che legge poco.", "Always lean: low fuel pressure, dirty injectors or a mass air flow sensor reading low.")
+            load != null && load > 10 -> t("Magra sotto carico: pompa o filtro della benzina che non stanno dietro.", "Lean under load: the fuel pump or filter can't keep up.")
+            else -> t("Ricca: un iniettore che gocciola, una sonda lambda pigra o il debimetro sporco.", "Rich: a dripping injector, a lazy O2 sensor or a dirty mass air flow sensor.")
         }
-        return Check(title, level, "minimo ${f(idle, 1, true)} % · in tiro ${f(load, 1, true)} %", detail)
+        return Check(title, level, t("minimo ${f(idle, 1, true)} % · in tiro ${f(load, 1, true)} %", "idle ${f(idle, 1, true)} % · under load ${f(load, 1, true)} %"), detail)
     }
 
     private fun charging(): Check {
-        val title = "Batteria e alternatore"
+        val title = t("Batteria e alternatore", "Battery and alternator")
         val run = runVolt.after(30.0)
         val off = offVolt
         if (run == null && off == null) {
-            return Check(title, Level.WAIT, "In misura", "Si misura a motore spento e poi dopo mezzo minuto in moto.")
+            return Check(title, Level.WAIT, t("In misura", "Measuring"), t("Si misura a motore spento e poi dopo mezzo minuto in moto.", "Measured with the engine off and then after half a minute running."))
         }
-        val value = listOfNotNull(run?.let { "${f(it, 1)} V in moto" }, off?.let { "${f(it, 1)} V da spento" }).joinToString(" · ")
+        val value = listOfNotNull(run?.let { t("${f(it, 1)} V in moto", "${f(it, 1)} V running") }, off?.let { t("${f(it, 1)} V da spento", "${f(it, 1)} V engine off") }).joinToString(" · ")
         return when {
-            run != null && run < 13.0 -> Check(title, Level.BAD, value, "In moto la tensione è troppo bassa: l'alternatore non carica.")
-            run != null && run > 15.0 -> Check(title, Level.BAD, value, "Tensione troppo alta: il regolatore dell'alternatore non funziona e cuoce la batteria.")
+            run != null && run < 13.0 -> Check(title, Level.BAD, value, t("In moto la tensione è troppo bassa: l'alternatore non carica.", "Voltage too low with the engine running: the alternator isn't charging."))
+            run != null && run > 15.0 -> Check(title, Level.BAD, value, t("Tensione troppo alta: il regolatore dell'alternatore non funziona e cuoce la batteria.", "Voltage too high: the alternator regulator has failed and is cooking the battery."))
             run != null && run < 13.4 -> Check(
                 title, Level.WARN, value,
-                "Carica debole: alternatore stanco o cinghia che slitta. Su alcune auto recenti scende così di proposito.",
+                t("Carica debole: alternatore stanco o cinghia che slitta. Su alcune auto recenti scende così di proposito.", "Weak charging: tired alternator or slipping belt. Some recent cars drop this low on purpose."),
             )
-            off != null && off < 12.2 -> Check(title, Level.WARN, value, "A motore spento la batteria è bassa: scarica o a fine vita.")
-            run == null -> Check(title, Level.WAIT, value, "La batteria è carica; manca la misura con il motore in moto.")
-            else -> Check(title, Level.OK, value, "La batteria tiene e l'alternatore carica il giusto.")
+            off != null && off < 12.2 -> Check(title, Level.WARN, value, t("A motore spento la batteria è bassa: scarica o a fine vita.", "The battery is low with the engine off: flat or near the end of its life."))
+            run == null -> Check(title, Level.WAIT, value, t("La batteria è carica; manca la misura con il motore in moto.", "The battery is charged; the reading with the engine running is still missing."))
+            else -> Check(title, Level.OK, value, t("La batteria tiene e l'alternatore carica il giusto.", "The battery holds up and the alternator charges correctly."))
         }
     }
 
     private fun warmup(has: Set<Metric>, now: Map<Metric, Double>): Check {
-        val title = "Temperatura e termostato"
-        if (Metric.COOLANT !in has) return Check(title, Level.NA, "N/D", "La centralina non comunica la temperatura dell'acqua.")
-        val start = coolStart ?: return Check(title, Level.WAIT, "In misura", "Aspetto la prima lettura.")
+        val title = t("Temperatura e termostato", "Temperature and thermostat")
+        if (Metric.COOLANT !in has) return Check(title, Level.NA, t("N/D", "N/A"), t("La centralina non comunica la temperatura dell'acqua.", "The ECU doesn't report the coolant temperature."))
+        val start = coolStart ?: return Check(title, Level.WAIT, t("In misura", "Measuring"), t("Aspetto la prima lettura.", "Waiting for the first reading."))
         val cur = now[Metric.COOLANT]
         val mins = runningS / 60
         val warm = warmAtS
         return when {
-            coolMax > 108 -> Check(title, Level.BAD, "max ${f(coolMax)} °C", "Il motore si è scaldato troppo: livello del liquido, ventola o pompa dell'acqua.")
-            start >= 70 -> Check(title, Level.OK, "${f(cur)} °C", "Era già calda all'avvio: il tempo di riscaldamento si misura partendo a motore freddo.")
+            coolMax > 108 -> Check(title, Level.BAD, t("max ${f(coolMax)} °C", "max ${f(coolMax)} °C"), t("Il motore si è scaldato troppo: livello del liquido, ventola o pompa dell'acqua.", "The engine got too hot: check coolant level, fan or water pump."))
+            start >= 70 -> Check(title, Level.OK, "${f(cur)} °C", t("Era già calda all'avvio: il tempo di riscaldamento si misura partendo a motore freddo.", "It was already warm at start-up: warm-up time is measured from a cold engine."))
             warm != null && warm > 15 * 60 -> Check(
-                title, Level.WARN, "80 °C in ${f(warm / 60)} min",
-                "Ci mette tanto a scaldarsi: il termostato potrebbe restare aperto.",
+                title, Level.WARN, t("80 °C in ${f(warm / 60)} min", "80 °C in ${f(warm / 60)} min"),
+                t("Ci mette tanto a scaldarsi: il termostato potrebbe restare aperto.", "It takes a long time to warm up: the thermostat may be stuck open."),
             )
-            warm != null -> Check(title, Level.OK, "80 °C in ${f(warm / 60, 1)} min", "Si scalda nei tempi giusti: termostato a posto.")
+            warm != null -> Check(title, Level.OK, t("80 °C in ${f(warm / 60, 1)} min", "80 °C in ${f(warm / 60, 1)} min"), t("Si scalda nei tempi giusti: termostato a posto.", "Warms up on time: thermostat OK."))
             mins > 15 && coolMax < 75 -> Check(
-                title, Level.WARN, "max ${f(coolMax)} °C dopo ${f(mins)} min",
-                "Dopo un quarto d'ora non arriva a 75 °C: termostato bloccato aperto.",
+                title, Level.WARN, t("max ${f(coolMax)} °C dopo ${f(mins)} min", "max ${f(coolMax)} °C after ${f(mins)} min"),
+                t("Dopo un quarto d'ora non arriva a 75 °C: termostato bloccato aperto.", "After a quarter of an hour it doesn't reach 75 °C: thermostat stuck open."),
             )
-            else -> Check(title, Level.WAIT, "${f(cur)} °C · ${f(mins, 1)} min", "Sto misurando quanto ci mette ad arrivare a 80 °C.")
+            else -> Check(title, Level.WAIT, t("${f(cur)} °C · ${f(mins, 1)} min", "${f(cur)} °C · ${f(mins, 1)} min"), t("Sto misurando quanto ci mette ad arrivare a 80 °C.", "Measuring how long it takes to reach 80 °C."))
         }
     }
 
     private fun intercooler(p: Profile, has: Set<Metric>): Check? {
         if (!p.turbo) return null
-        val title = "Intercooler"
-        if (Metric.IAT !in has) return Check(title, Level.NA, "N/D", "La centralina non comunica la temperatura dell'aria aspirata.")
+        val title = t("Intercooler", "Intercooler")
+        if (Metric.IAT !in has) return Check(title, Level.NA, t("N/D", "N/A"), t("La centralina non comunica la temperatura dell'aria aspirata.", "The ECU doesn't report the intake air temperature."))
         val rise = iatRise
         if (boostS < 3 || rise == null) {
-            return Check(title, Level.WAIT, "In misura", "Serve qualche secondo col turbo sopra 0,5 bar, dopo un tratto in movimento.")
+            return Check(title, Level.WAIT, t("In misura", "Measuring"), t("Serve qualche secondo col turbo sopra 0,5 bar, dopo un tratto in movimento.", "Needs a few seconds above 0.5 bar of boost, after driving for a while."))
         }
-        val value = "${f(rise, 0, true)} °C sull'aria esterna"
+        val value = t("${f(rise, 0, true)} °C sull'aria esterna", "${f(rise, 0, true)} °C above outside air")
         return when {
-            rise > 30 -> Check(title, Level.BAD, value, "L'aria in pressione arriva molto calda: intercooler intasato o tubi che perdono. Perdi potenza.")
-            rise > 15 -> Check(title, Level.WARN, value, "L'aria si scalda parecchio sotto turbo: intercooler sporco, oppure motore cotto da una sosta al sole.")
-            else -> Check(title, Level.OK, value, "L'aria in pressione resta fresca: l'intercooler lavora bene.")
+            rise > 30 -> Check(title, Level.BAD, value, t("L'aria in pressione arriva molto calda: intercooler intasato o tubi che perdono. Perdi potenza.", "The charge air arrives very hot: clogged intercooler or leaking pipes. You're losing power."))
+            rise > 15 -> Check(title, Level.WARN, value, t("L'aria si scalda parecchio sotto turbo: intercooler sporco, oppure motore cotto da una sosta al sole.", "The air heats up a lot under boost: dirty intercooler, or an engine heat-soaked from sitting in the sun."))
+            else -> Check(title, Level.OK, value, t("L'aria in pressione resta fresca: l'intercooler lavora bene.", "The charge air stays cool: the intercooler is doing its job."))
         }
     }
 
     private fun turbo(p: Profile): Check? {
         if (!p.turbo) return null
-        val title = "Turbo"
-        val b = boostMax ?: return Check(title, Level.WAIT, "In misura", "Fai una tirata in terza: qui resta la pressione più alta raggiunta.")
+        val title = t("Turbo", "Turbo")
+        val b = boostMax ?: return Check(title, Level.WAIT, t("In misura", "Measuring"), t("Fai una tirata in terza: qui resta la pressione più alta raggiunta.", "Do a full pull in third gear: the highest boost reached is kept here."))
         return Check(
-            title, Level.OK, "max ${f(b, 2, true)} bar a ${f(boostMaxRpm)} giri",
-            "La spinta più alta di questa sessione. Se negli anni cala, o compare l'errore P0299, controlla manicotti e valvola wastegate.",
+            title, Level.OK, t("max ${f(b, 2, true)} bar a ${f(boostMaxRpm)} giri", "max ${f(b, 2, true)} bar at ${f(boostMaxRpm)} rpm"),
+            t("La spinta più alta di questa sessione. Se negli anni cala, o compare l'errore P0299, controlla manicotti e valvola wastegate.", "The highest boost of this session. If it drops over the years, or error P0299 shows up, check the hoses and the wastegate."),
         )
     }
 
     private fun speedometer(gps: GpsStatus): Check {
-        val title = "Velocità rispetto al GPS"
-        if (gps == GpsStatus.NO_HARDWARE) return Check(title, Level.NA, "N/D", "Questo tablet non ha il GPS, quindi il confronto non si può fare.")
-        if (gps == GpsStatus.NO_PERMISSION) return Check(title, Level.NA, "N/D", "Serve il permesso di posizione: lo trovi nella scheda Auto.")
+        val title = t("Velocità rispetto al GPS", "Speed vs GPS")
+        if (gps == GpsStatus.NO_HARDWARE) return Check(title, Level.NA, t("N/D", "N/A"), t("Questo tablet non ha il GPS, quindi il confronto non si può fare.", "This tablet has no GPS, so the comparison isn't possible."))
+        if (gps == GpsStatus.NO_PERMISSION) return Check(title, Level.NA, t("N/D", "N/A"), t("Serve il permesso di posizione: lo trovi nella scheda Auto.", "Needs location permission: you'll find it in the Car tab."))
         val diff = speedRatio.after(60.0)
-            ?: return Check(title, Level.WAIT, "In misura", "Serve un minuto a velocità costante sopra i 30 km/h, all'aperto.")
-        val value = "${f(diff, 1, true)} % rispetto al GPS"
+            ?: return Check(title, Level.WAIT, t("In misura", "Measuring"), t("Serve un minuto a velocità costante sopra i 30 km/h, all'aperto.", "Needs a minute at steady speed above 30 km/h, outdoors."))
+        val value = t("${f(diff, 1, true)} % rispetto al GPS", "${f(diff, 1, true)} % vs GPS")
         val detail = when {
-            kotlin.math.abs(diff) <= 2 -> "La centralina misura la velocità giusta: distanze e consumi dell'app sono affidabili."
-            diff > 0 -> "La centralina segna più della velocità vera: chilometri percorsi e tempi sono gonfiati di altrettanto. Succede con gomme più piccole o consumate."
-            else -> "La centralina segna meno della velocità vera: tipico di gomme più grandi dell'originale."
+            kotlin.math.abs(diff) <= 2 -> t("La centralina misura la velocità giusta: distanze e consumi dell'app sono affidabili.", "The ECU measures speed correctly: the app's distances and fuel figures are reliable.")
+            diff > 0 -> t("La centralina segna più della velocità vera: chilometri percorsi e tempi sono gonfiati di altrettanto. Succede con gomme più piccole o consumate.", "The ECU reads higher than your true speed: distance and times are inflated by the same amount. It happens with smaller or worn tyres.")
+            else -> t("La centralina segna meno della velocità vera: tipico di gomme più grandi dell'originale.", "The ECU reads lower than your true speed: typical of tyres larger than the original ones.")
         }
         return Check(title, if (kotlin.math.abs(diff) <= 5) Level.OK else Level.WARN, value, detail)
     }

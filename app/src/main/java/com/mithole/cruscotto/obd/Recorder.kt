@@ -22,13 +22,16 @@ data class Recording(val file: File, val startedAt: Long, val seconds: Double, v
 data class Track(val seconds: Double, val series: Map<Metric, List<Sample>>, val path: List<PathPoint> = emptyList())
 
 /**
- * Registra ogni giro di letture in un CSV all'italiana (punto e virgola, virgola decimale),
- * che si apre direttamente con Excel. I file stanno nella memoria dell'app finché non si esportano.
+ * Registra ogni giro di letture in un CSV che si apre direttamente con Excel: in italiano con punto e virgola
+ * e virgola decimale, in inglese con virgola e punto decimale. Il formato si sceglie all'inizio di ogni file
+ * e la rilettura lo riconosce dall'intestazione. I file stanno nella memoria dell'app finché non si esportano.
  */
 class Recorder(private val dir: File) {
     private var writer: BufferedWriter? = null
     private var t0 = 0L
     private var lastFlush = 0L
+    private var sep = ';'
+    private var comma = true
 
     val active: Boolean @Synchronized get() = writer != null
 
@@ -40,7 +43,11 @@ class Recorder(private val dir: File) {
         val w = File(dir, name).bufferedWriter(Charsets.UTF_8)
         // BOM: senza, Excel legge male le lettere accentate.
         w.write(0xFEFF)
-        w.write((listOf("Secondi") + Metric.entries.map { "${it.label} (${it.unit})" } + listOf("Marcia", "Latitudine", "Longitudine", "Velocità GPS (km/h)")).joinToString(";"))
+        comma = !L.en
+        sep = if (comma) ';' else ','
+        val head = listOf(t("Secondi", "Seconds")) + Metric.entries.map { "${it.label} (${it.unit})" } +
+            listOf(t("Marcia", "Gear"), t("Latitudine", "Latitude"), t("Longitudine", "Longitude"), t("Velocità GPS (km/h)", "GPS speed (km/h)"))
+        w.write(head.joinToString(sep.toString()))
         w.newLine()
         writer = w
         t0 = now
@@ -60,11 +67,11 @@ class Recorder(private val dir: File) {
         row += num((now - t0) / 1000.0, 2)
         Metric.entries.forEach { m -> row += values[m]?.let { num(it, m.decimals + 1) } ?: "" }
         row += gear?.toString() ?: ""
-        row += gps?.let { String.format(Locale.US, "%.6f", it.lat).replace('.', ',') } ?: ""
-        row += gps?.let { String.format(Locale.US, "%.6f", it.lon).replace('.', ',') } ?: ""
+        row += gps?.let { num(it.lat, 6) } ?: ""
+        row += gps?.let { num(it.lon, 6) } ?: ""
         row += gps?.kmh?.let { num(it, 1) } ?: ""
         runCatching {
-            w.write(row.joinToString(";"))
+            w.write(row.joinToString(sep.toString()))
             w.newLine()
             if (now - lastFlush > 5_000) {
                 w.flush()
@@ -78,8 +85,15 @@ class Recorder(private val dir: File) {
             .map { f -> Recording(f, startOf(f), lastSeconds(f), f.length()) }
             .sortedByDescending { it.startedAt }
 
+    private fun num(v: Double, decimals: Int): String {
+        val s = String.format(Locale.US, "%.${decimals}f", v)
+        return if (comma) s.replace('.', ',') else s
+    }
+
     companion object {
-        private fun num(v: Double, decimals: Int) = String.format(Locale.ITALY, "%.${decimals}f", v)
+        /** Prima colonna di una riga come numero, in tutti e due i formati. */
+        private fun firstCell(line: String): Double? =
+            if (';' in line) line.substringBefore(';').replace(',', '.').toDoubleOrNull() else line.substringBefore(',').toDoubleOrNull()
 
         private fun startOf(f: File): Long =
             runCatching { SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ITALY).parse(f.name.removePrefix("giro_").removeSuffix(".csv"))!!.time }
@@ -94,7 +108,7 @@ class Recorder(private val dir: File) {
                 val buf = ByteArray((len - from).toInt())
                 raf.readFully(buf)
                 val last = String(buf, Charsets.UTF_8).trimEnd().substringAfterLast('\n')
-                last.substringBefore(';').replace(',', '.').toDoubleOrNull() ?: 0.0
+                firstCell(last) ?: 0.0
             }
         }.getOrDefault(0.0)
 
@@ -104,9 +118,15 @@ class Recorder(private val dir: File) {
             val base = Metric.entries.size + 2
             var secs = 0.0
             f.bufferedReader(Charsets.UTF_8).useLines { lines ->
-                lines.drop(1).forEach { line ->
-                    val cells = line.split(';')
-                    val t = cells.getOrNull(0)?.replace(',', '.')?.toDoubleOrNull() ?: return@forEach
+                var sep = ';'
+                lines.forEachIndexed { n, line ->
+                    // L'intestazione dice il formato: col punto e virgola è quello italiano.
+                    if (n == 0) {
+                        sep = if (';' in line) ';' else ','
+                        return@forEachIndexed
+                    }
+                    val cells = line.split(sep)
+                    val t = cells.getOrNull(0)?.replace(',', '.')?.toDoubleOrNull() ?: return@forEachIndexed
                     secs = t
                     val ms = (t * 1000).toLong()
                     Metric.entries.forEachIndexed { i, m ->

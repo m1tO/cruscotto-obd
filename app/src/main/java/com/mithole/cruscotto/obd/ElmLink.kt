@@ -36,8 +36,8 @@ abstract class StreamLink : ElmLink {
     @Volatile protected var output: OutputStream? = null
 
     override suspend fun exchange(cmd: String, timeoutMs: Long): String = withContext(Dispatchers.IO) {
-        val inp = input ?: throw IOException("Dongle non collegato")
-        val out = output ?: throw IOException("Dongle non collegato")
+        val inp = input ?: throw IOException(t("Dongle non collegato", "Dongle not connected"))
+        val out = output ?: throw IOException(t("Dongle non collegato", "Dongle not connected"))
         while (inp.available() > 0) inp.read()
         out.write((cmd + "\r").toByteArray(Charsets.US_ASCII))
         out.flush()
@@ -48,7 +48,7 @@ abstract class StreamLink : ElmLink {
             val n = inp.available()
             if (n > 0) {
                 val r = inp.read(buf, 0, minOf(n, buf.size))
-                if (r < 0) throw IOException("Il dongle ha chiuso il collegamento")
+                if (r < 0) throw IOException(t("Il dongle ha chiuso il collegamento", "The dongle closed the connection"))
                 for (i in 0 until r) {
                     val ch = (buf[i].toInt() and 0xFF).toChar()
                     if (ch == '>') break@loop
@@ -63,8 +63,8 @@ abstract class StreamLink : ElmLink {
     }
 
     override suspend fun stream(cmd: String, durationMs: Long, onLine: (String) -> Unit): Boolean = withContext(Dispatchers.IO) {
-        val inp = input ?: throw IOException("Dongle non collegato")
-        val out = output ?: throw IOException("Dongle non collegato")
+        val inp = input ?: throw IOException(t("Dongle non collegato", "Dongle not connected"))
+        val out = output ?: throw IOException(t("Dongle non collegato", "Dongle not connected"))
         while (inp.available() > 0) inp.read()
         out.write((cmd + "\r").toByteArray(Charsets.US_ASCII))
         out.flush()
@@ -83,14 +83,14 @@ abstract class StreamLink : ElmLink {
                 stopSent = true
                 stopDeadline = now + 2_000
             }
-            if (stopSent && now > stopDeadline) throw IOException("Il dongle non smette di ascoltare")
+            if (stopSent && now > stopDeadline) throw IOException(t("Il dongle non smette di ascoltare", "The dongle won't stop listening"))
             val n = inp.available()
             if (n == 0) {
                 delay(4)
                 continue
             }
             val r = inp.read(buf, 0, minOf(n, buf.size))
-            if (r < 0) throw IOException("Il dongle ha chiuso il collegamento")
+            if (r < 0) throw IOException(t("Il dongle ha chiuso il collegamento", "The dongle closed the connection"))
             for (i in 0 until r) {
                 val ch = (buf[i].toInt() and 0xFF).toChar()
                 if (ch == '>' || ch == '\r' || ch == '\n') {
@@ -144,7 +144,7 @@ class BluetoothLink(private val adapter: BluetoothAdapter, private val address: 
                 runCatching { s.close() }
             }
         }
-        throw IOException("Non riesco a collegarmi al dongle: è nella presa e il quadro è acceso?", last)
+        throw IOException(t("Non riesco a collegarmi al dongle: è nella presa e il quadro è acceso?", "Can't connect to the dongle: is it plugged in and is the ignition on?"), last)
     }
 
     override fun close() {

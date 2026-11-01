@@ -121,8 +121,8 @@ class Sniffer(private val log: Writer? = null) {
     /** Il riassunto da copiare: un indirizzo per riga, con i byte che cambiano e tra quali valori. */
     fun summary(header: List<String>): String = buildString {
         header.forEach { appendLine(it) }
-        appendLine("Messaggi: $frames · indirizzi: ${stats.size} · dongle saturo: $overflows volte · righe illeggibili: $garbled")
-        appendLine("Formato: indirizzo · messaggi/s · byte · ultimo valore · byte che cambiano [min-max, cambi]")
+        appendLine(t("Messaggi: $frames · indirizzi: ${stats.size} · dongle saturo: $overflows volte · righe illeggibili: $garbled", "Messages: $frames · IDs: ${stats.size} · dongle overflowed: $overflows times · unreadable lines: $garbled"))
+        appendLine(t("Formato: indirizzo · messaggi/s · byte · ultimo valore · byte che cambiano [min-max, cambi]", "Format: ID · messages/s · bytes · last value · changing bytes [min-max, changes]"))
         for (s in stats.values) {
             val last = s.last.joinToString(" ") { "%02X".format(it) }
             val vary = (0 until s.dlc).filter(s::varies).joinToString(" ") { i ->
@@ -131,7 +131,7 @@ class Sniffer(private val log: Writer? = null) {
             append(CanParse.idText(s.id, s.ext)).append("  ")
             append(String.format(Locale.US, "%.1f/s", rate(s))).append("  ")
             append("${s.dlc}B  ").append(last)
-            append("  ").append(vary.ifEmpty { "fisso" })
+            append("  ").append(vary.ifEmpty { t("fisso", "fixed") })
             appendLine()
         }
     }

@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import com.mithole.cruscotto.obd.t
+import com.mithole.cruscotto.obd.L
 
 object Pal {
     val bg = Color(0xFF04060A)
@@ -125,8 +127,8 @@ fun CruscottoTheme(content: @Composable () -> Unit) {
 }
 
 fun fmt(v: Double?, decimals: Int = 0, signed: Boolean = false): String {
-    if (v == null || v.isNaN()) return "N/D"
-    return String.format(Locale.ITALY, if (signed) "%+.${decimals}f" else "%.${decimals}f", v)
+    if (v == null || v.isNaN()) return t("N/D", "N/A")
+    return String.format(L.locale, if (signed) "%+.${decimals}f" else "%.${decimals}f", v)
 }
 
 /** Icone Material monocrome: prendono il colore del testo intorno. */
