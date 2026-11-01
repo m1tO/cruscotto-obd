@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File che l'app può dare ad altre app con "Condividi": solo gli ascolti della rete. -->
+<paths>
+    <files-path name="ascolto" path="ascolto/" />
+</paths>

@@ -1,0 +1,15 @@
+# Build e cache
+.gradle/
+.kotlin/
+build/
+app/build/
+*.apk
+*.aab
+
+# Locale: contiene il percorso dell'SDK con il nome utente
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
